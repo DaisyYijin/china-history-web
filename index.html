@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中国通史 · 大事年表与人物图谱（远古 — 当代）</title>
+  <meta name="description" content="中华上下五千年：大事年表、战役兵力对比、历代人物志与人物关系图谱。从炎黄传说到新时代。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%23c0392b'/%3E%3Ctext x='50' y='72' font-size='62' text-anchor='middle' fill='%23fff' font-family='serif'%3E史%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ================= 顶部主视觉 ================= -->
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="seal" aria-hidden="true">史</div>
+      <h1>中国通史</h1>
+      <p class="hero-sub">上下五千年 &nbsp;·&nbsp; 从炎黄传说到民族复兴</p>
+      <p class="hero-quote">“以史为镜，可以知兴替。”</p>
+      <div class="stats" id="stats"></div>
+    </div>
+  </header>
+
+  <!-- ================= 导航 ================= -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="brand" href="#top">史鉴 · 华夏五千年</a>
+      <div class="nav-links">
+        <a href="#timeline-section">大事年表</a>
+        <a href="#graph-section">关系图谱</a>
+        <a href="#people-section">人物志</a>
+      </div>
+      <input type="search" id="search" placeholder="搜索事件 / 人物 / 战役…" autocomplete="off">
+    </div>
+  </nav>
+
+  <main id="top">
+
+    <!-- ================= 大事年表 ================= -->
+    <section id="timeline-section" class="section">
+      <div class="section-head">
+        <h2>大事年表</h2>
+        <p>点击任意事件，查看经过、双方兵力与关键人物</p>
+      </div>
+      <div class="filters" id="cat-filters"></div>
+      <div id="timeline"></div>
+    </section>
+
+    <!-- ================= 人物关系图谱 ================= -->
+    <section id="graph-section" class="section">
+      <div class="section-head">
+        <h2>人物关系图谱</h2>
+        <p>节点大小代表人物关联度 · 点击节点查看人物详情 · 悬停连线查看关系</p>
+      </div>
+      <div class="graph-toolbar">
+        <div class="legend" id="graph-legend"></div>
+        <label class="switch"><input type="checkbox" id="toggle-labels"><span>显示全部人名</span></label>
+      </div>
+      <div id="graph"></div>
+    </section>
+
+    <!-- ================= 人物志 ================= -->
+    <section id="people-section" class="section">
+      <div class="section-head">
+        <h2>人物志</h2>
+        <p>按阵营浏览，点击卡片查看人物生平与关系</p>
+      </div>
+      <div class="filters" id="faction-filters"></div>
+      <div id="people-grid"></div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>中国通史 · 远古 — 当代 ｜ 数据依据通行历史教材与公开资料整理，传说时代人物仅具文化意义，兵力数字为常见统计口径，仅供参考学习。</p>
+    <p class="docker-note">Docker 部署：<code>docker compose up -d</code> 后访问 <code>http://localhost:8080</code></p>
+  </footer>
+
+  <!-- ================= 弹窗 ================= -->
+  <div class="modal-mask" id="modal-mask" hidden>
+    <div class="modal" id="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modal-close" aria-label="关闭">✕</button>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="lib/echarts.min.js"></script>
+  <script src="js/people.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/relations.js"></script>
+  <script src="js/era-xianqin.js"></script>
+  <script src="js/era-qinhan.js"></script>
+  <script src="js/era-suitang.js"></script>
+  <script src="js/era-songyuan.js"></script>
+  <script src="js/era-mingqing.js"></script>
+  <script src="js/era-modern-extra.js"></script>
+  <script src="js/era-contemporary.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

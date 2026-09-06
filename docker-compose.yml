@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    image: china-history:latest
+    container_name: china-history
+    ports:
+      - "8080:80"
+    restart: unless-stopped
