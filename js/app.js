@@ -1,5 +1,7 @@
 /* =========================================================
- * 中国近代史 · 页面逻辑
+ * 中国通史 · 页面逻辑
+ * 包含：主题切换 / 标签页 / 时期折叠 / 人物分页 /
+ *       两点关系查询（含间接关系搜索）/ 弹窗 / 力导向图谱
  * ========================================================= */
 
 /* ---------- 常量 ---------- */
@@ -30,6 +32,20 @@ const PERIODS = {
   16: { name: "当代中国",         sub: "1949 — 今 · 复兴之路" }
 };
 
+const TABS = ["timeline-section", "graph-section", "people-section"];
+const PAGE_SIZE = 60;
+const THEME_KEY = "history-theme";
+
+/* ---------- 工具 ---------- */
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+function cssVar(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
 /* ---------- 索引 ---------- */
 const EVENT_MAP = {};
 EVENTS.forEach((e, i) => { EVENT_MAP[e.id] = e; e._order = i; });
@@ -39,9 +55,12 @@ const PERSON_MAP = {};
 PEOPLE_LIST.forEach(p => { PERSON_MAP[p.id] = p; });
 
 const DEGREE = {};
+const ADJ = {};
 RELATIONS.forEach(r => {
   DEGREE[r.a] = (DEGREE[r.a] || 0) + 1;
   DEGREE[r.b] = (DEGREE[r.b] || 0) + 1;
+  (ADJ[r.a] = ADJ[r.a] || []).push({ to: r.b, t: r.t });
+  (ADJ[r.b] = ADJ[r.b] || []).push({ to: r.a, t: r.t });
 });
 
 function periodOf(ev) {
@@ -54,15 +73,47 @@ function periodOf(ev) {
   return 16;
 }
 
-function esc(s) {
-  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));
+/* ---------- 主题切换 ---------- */
+function currentTheme() {
+  try { return localStorage.getItem(THEME_KEY) || "dark"; } catch (e) { return "dark"; }
 }
+function applyTheme(t, rebuild) {
+  document.body.classList.toggle("light", t === "light");
+  const btn = document.getElementById("theme-toggle");
+  if (btn) btn.textContent = t === "light" ? "☀️" : "🌙";
+  if (rebuild) {
+    if (mainChart) applyGraphFilter();
+    if (miniPersonId) renderMiniGraph(miniPersonId, FACTIONS[PERSON_MAP[miniPersonId].faction].color);
+  }
+}
+document.getElementById("theme-toggle").onclick = () => {
+  const t = currentTheme() === "light" ? "dark" : "light";
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  applyTheme(t, true);
+};
+
+/* ---------- 标签页 ---------- */
+function switchTab(id, push) {
+  TABS.forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.classList.toggle("tab-active", s === id);
+  });
+  document.querySelectorAll(".tab-link").forEach(a =>
+    a.classList.toggle("active", a.dataset.tabLink === id));
+  if (id === "graph-section") {
+    if (!mainChart) initGraph();
+    else if (mainChart) mainChart.resize();
+  }
+  if (push !== false) try { history.replaceState(null, "", "#" + id); } catch (e) {}
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+document.addEventListener("click", e => {
+  const l = e.target.closest("[data-tab-link]");
+  if (l) { e.preventDefault(); switchTab(l.dataset.tabLink); }
+});
 
 /* ---------- 顶部统计 ---------- */
 (function renderStats() {
-  const battles = EVENTS.filter(e => e.forces).length;
   const items = [
     [EVENTS.length, "重大事件"],
     [PEOPLE_LIST.length, "关键人物"],
@@ -75,6 +126,7 @@ function esc(s) {
 
 /* ---------- 大事年表 ---------- */
 let catFilter = "all";
+const openEras = new Set();
 
 function renderCatFilters() {
   const box = document.getElementById("cat-filters");
@@ -97,13 +149,22 @@ function renderTimeline() {
     (byPeriod[p] = byPeriod[p] || []).push(ev);
   });
 
+  if (openEras.size === 0) {
+    const first = Object.keys(byPeriod).sort((a, b) => a - b)[0];
+    if (first != null) openEras.add(first);
+  }
+
   let html = "";
   Object.keys(PERIODS).forEach(pk => {
     const list = (byPeriod[pk] || []).sort((x, y) => x.year - y.year || x._order - y._order);
     if (!list.length) return;
-    html += `<div class="era" data-era="${pk}">
-      <div class="era-head"><div class="era-line"></div><span>${PERIODS[pk].name}<em>${PERIODS[pk].sub}</em></span></div>
-      <div class="timeline">`;
+    html += `<div class="era ${openEras.has(pk) ? "open" : ""}" data-era="${pk}">
+      <div class="era-head">
+        <div class="era-line"></div>
+        <span>${PERIODS[pk].name}<em>${PERIODS[pk].sub}</em></span>
+        <span class="era-meta">${list.length} 事<i class="era-toggle">▾</i></span>
+      </div>
+      <div class="era-body"><div class="timeline">`;
     list.forEach(ev => {
       const cat = CATS[ev.category];
       const matched = !term || evMatch(ev, term);
@@ -113,7 +174,7 @@ function renderTimeline() {
         <span class="dot" style="background:${cat.color}"></span>
         <div class="t-card" data-open-event="${ev.id}">
           <div class="t-top">
-            <span class="t-year">${ev.year}</span>
+            <span class="t-year">${ev.year < 0 ? "前" + (-ev.year) : ev.year}</span>
             <span class="t-title">${esc(ev.title)}</span>
             <span class="t-tag" style="color:${cat.color}">${cat.name}</span>
           </div>
@@ -124,9 +185,11 @@ function renderTimeline() {
         </div>
       </div>`;
     });
-    html += `</div></div>`;
+    html += `</div></div></div>`;
   });
   wrap.innerHTML = html;
+  wrap.classList.toggle("searching", !!term);
+  syncToggleAllBtn();
 }
 
 function evMatch(ev, term) {
@@ -134,8 +197,36 @@ function evMatch(ev, term) {
   return hay.indexOf(term) !== -1;
 }
 
+document.getElementById("timeline").addEventListener("click", e => {
+  const head = e.target.closest(".era-head");
+  if (head) {
+    const era = head.parentElement;
+    era.classList.toggle("open");
+    if (era.classList.contains("open")) openEras.add(era.dataset.era);
+    else openEras.delete(era.dataset.era);
+    syncToggleAllBtn();
+  }
+});
+
+const eraToggleAllBtn = document.getElementById("era-toggle-all");
+eraToggleAllBtn.onclick = () => {
+  const eras = [...document.querySelectorAll("#timeline .era")];
+  const anyClosed = eras.some(el => !el.classList.contains("open"));
+  eras.forEach(el => {
+    el.classList.toggle("open", anyClosed);
+    if (anyClosed) openEras.add(el.dataset.era); else openEras.delete(el.dataset.era);
+  });
+  syncToggleAllBtn();
+};
+function syncToggleAllBtn() {
+  const eras = [...document.querySelectorAll("#timeline .era")];
+  const allOpen = eras.length > 0 && eras.every(el => el.classList.contains("open"));
+  eraToggleAllBtn.textContent = allOpen ? "收起全部" : "展开全部";
+}
+
 /* ---------- 人物志 ---------- */
 let factionFilter = "all";
+let peoplePage = 1;
 
 function renderFactionFilters() {
   const box = document.getElementById("faction-filters");
@@ -146,7 +237,7 @@ function renderFactionFilters() {
       <span class="dot" style="background:${f.color}"></span>${f.name}
      </button>`).join("");
   box.querySelectorAll(".filter-btn").forEach(btn => {
-    btn.onclick = () => { factionFilter = btn.dataset.f; renderFactionFilters(); renderPeopleGrid(); };
+    btn.onclick = () => { factionFilter = btn.dataset.f; peoplePage = 1; renderFactionFilters(); renderPeopleGrid(); };
   });
 }
 
@@ -156,11 +247,11 @@ function renderPeopleGrid() {
   const list = PEOPLE_LIST.filter(p =>
     (factionFilter === "all" || p.faction === factionFilter) &&
     (!term || personMatch(p, term)));
-  if (!list.length) {
-    grid.innerHTML = `<div class="grid-empty">没有匹配的人物</div>`;
-    return;
-  }
-  grid.innerHTML = list.map(p => {
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if (peoplePage > pages) peoplePage = pages;
+  const slice = list.slice((peoplePage - 1) * PAGE_SIZE, peoplePage * PAGE_SIZE);
+
+  grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
     return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}">
       <div class="avatar" style="color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
@@ -169,8 +260,22 @@ function renderPeopleGrid() {
       <div class="p-title">${esc(p.title)}</div>
       <span class="p-faction" style="color:${f.color};border-color:${f.color}">${f.name}</span>
     </div>`;
-  }).join("");
+  }).join("") : `<div class="grid-empty">没有匹配的人物</div>`;
+
+  const pager = document.getElementById("people-pagination");
+  if (pages <= 1) { pager.innerHTML = ""; return; }
+  pager.innerHTML = `
+    <button class="mini-btn" data-page="prev" ${peoplePage <= 1 ? "disabled" : ""}>上一页</button>
+    <span class="page-info">第 ${peoplePage} / ${pages} 页 · 共 ${list.length} 人</span>
+    <button class="mini-btn" data-page="next" ${peoplePage >= pages ? "disabled" : ""}>下一页</button>`;
 }
+document.getElementById("people-pagination").addEventListener("click", e => {
+  const btn = e.target.closest("[data-page]");
+  if (!btn || btn.disabled) return;
+  peoplePage += btn.dataset.page === "next" ? 1 : -1;
+  renderPeopleGrid();
+  document.getElementById("people-section").scrollIntoView({ behavior: "instant", block: "start" });
+});
 
 function personMatch(p, term) {
   const f = FACTIONS[p.faction];
@@ -183,11 +288,17 @@ function getTerm() {
   const v = document.getElementById("search").value.trim();
   return v || "";
 }
+document.getElementById("search").addEventListener("input", () => {
+  peoplePage = 1;
+  renderTimeline();
+  renderPeopleGrid();
+});
 
 /* ---------- 弹窗 ---------- */
 const modalMask = document.getElementById("modal-mask");
 const modalBody = document.getElementById("modal-body");
 let miniChart = null;
+let miniPersonId = null;
 
 function openModal() {
   modalMask.hidden = false;
@@ -197,6 +308,7 @@ function closeModal() {
   modalMask.hidden = true;
   document.body.style.overflow = "";
   if (miniChart) { miniChart.dispose(); miniChart = null; }
+  miniPersonId = null;
 }
 document.getElementById("modal-close").onclick = closeModal;
 modalMask.addEventListener("click", e => { if (e.target === modalMask) closeModal(); });
@@ -284,6 +396,7 @@ function openPerson(id) {
 function renderMiniGraph(centerId, color) {
   const el = document.getElementById("mini-graph");
   if (!el || typeof echarts === "undefined") return;
+  miniPersonId = centerId;
   const nodes = [{ id: centerId, name: PERSON_MAP[centerId].name, center: true }];
   const seen = { [centerId]: true };
   const links = [];
@@ -294,9 +407,13 @@ function renderMiniGraph(centerId, color) {
       links.push({ source: r.a, target: r.b, t: r.t });
     }
   });
+  if (miniChart) { miniChart.dispose(); miniChart = null; }
   miniChart = echarts.init(el);
   miniChart.setOption({
     tooltip: {
+      backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
+      borderColor: "rgba(211,169,79,.5)",
+      textStyle: { color: cssVar("--ink") || "#e9e4d6", fontFamily: "serif" },
       formatter(p) {
         if (p.dataType === "edge") return esc(p.data.t);
         return esc(p.name);
@@ -305,21 +422,21 @@ function renderMiniGraph(centerId, color) {
     series: [{
       type: "graph", layout: "force", roam: true,
       force: { repulsion: 420, edgeLength: 110, gravity: .12 },
-      color: [color, "#8a8f98"],
       data: nodes.map(n => ({
         id: n.id, name: n.name,
         symbolSize: n.center ? 52 : 34,
         itemStyle: n.center
-          ? { color, borderColor: "#f0e8d3", borderWidth: 2, shadowBlur: 16, shadowColor: color }
+          ? { color, borderColor: "#d3a94f", borderWidth: 2, shadowBlur: 16, shadowColor: color }
           : { color: FACTIONS[PERSON_MAP[n.id].faction].color },
         label: {
-          show: true, position: "bottom", color: n.center ? "#f0e8d3" : "#c9c2ad",
+          show: true, position: "bottom",
+          color: n.center ? cssVar("--ink-strong") || "#f0e8d3" : cssVar("--ink-2") || "#c9c2ad",
           fontSize: n.center ? 14 : 12, fontFamily: "serif"
         }
       })),
       links: links.map(l => ({
         source: l.source, target: l.target,
-        lineStyle: { color: "rgba(255,255,255,.25)", width: 1.4, curveness: .18 },
+        lineStyle: { color: cssVar("--graph-edge") || "rgba(255,255,255,.25)", width: 1.4, curveness: .18 },
         emphasis: { lineStyle: { color: "#d3a94f", width: 2.4 } },
         t: l.t
       })),
@@ -332,9 +449,111 @@ function renderMiniGraph(centerId, color) {
   });
 }
 
+/* ---------- 关系查询（两点） ---------- */
+let selectedNode = null;
+
+function findPath(a, b, maxDepth) {
+  maxDepth = maxDepth || 5;
+  if (a === b) return [{ id: a, relTo: null }];
+  const prev = { [a]: null };
+  let frontier = [a];
+  for (let d = 0; d < maxDepth; d++) {
+    const next = [];
+    for (const u of frontier) {
+      for (const v of (ADJ[u] || [])) {
+        if (v.to in prev) continue;
+        prev[v.to] = { from: u, rel: v.t };
+        if (v.to === b) {
+          const chain = [];
+          let cur = b;
+          while (cur) {
+            chain.unshift({ id: cur, relTo: prev[cur] ? prev[cur].rel : null });
+            cur = prev[cur] ? prev[cur].from : null;
+          }
+          return chain;
+        }
+        next.push(v.to);
+      }
+    }
+    frontier = next;
+  }
+  return null;
+}
+
+function sharedEvents(a, b) {
+  const ea = new Set(PEOPLE[a].events || []);
+  return (PEOPLE[b].events || []).filter(e => ea.has(e));
+}
+
+function relNodeHtml(id) {
+  return `<span class="rel-node" data-open-person="${id}">${esc(PERSON_MAP[id].name)}</span>`;
+}
+
+function showRelHint(id) {
+  const p = PERSON_MAP[id];
+  const box = document.getElementById("rel-result");
+  box.hidden = false;
+  box.innerHTML = `<div class="rel-chain">已选择 <span class="rel-node">${esc(p.name)}</span>
+    <span class="rel-edge">—— 再点击另一个人，查询两人的关系；再次点击本人查看详情 ——</span>
+    <button class="mini-btn" data-rel-close>取消</button></div>`;
+}
+
+function showRelation(aId, bId) {
+  const A = PERSON_MAP[aId], B = PERSON_MAP[bId];
+  const box = document.getElementById("rel-result");
+  const direct = RELATIONS.find(r =>
+    (r.a === aId && r.b === bId) || (r.a === bId && r.b === aId));
+  const shared = sharedEvents(aId, bId);
+
+  let chainHtml;
+  if (direct) {
+    chainHtml = `${relNodeHtml(aId)}<span class="rel-edge">—— <b>${esc(direct.t)}</b> ——</span>${relNodeHtml(bId)}`;
+  } else {
+    const path = findPath(aId, bId);
+    if (path) {
+      const parts = [relNodeHtml(path[0].id)];
+      for (let i = 1; i < path.length; i++) {
+        parts.push(`<span class="rel-edge">—— <b>${esc(path[i].relTo)}</b> ——</span>`);
+        parts.push(relNodeHtml(path[i].id));
+      }
+      chainHtml = parts.join("") +
+        `<div class="rel-sub">两人无直接关系，以上为最短间接关系链（${path.length - 1} 步）</div>`;
+    } else {
+      chainHtml = `${relNodeHtml(aId)}<span class="rel-edge">—— 未找到直接或间接关系（5 层以内）——</span>${relNodeHtml(bId)}`;
+    }
+  }
+
+  const sharedHtml = shared.length
+    ? `<div class="rel-sub">共同参与事件：${shared.slice(0, 4).map(eid => {
+        const ev = EVENT_MAP[eid];
+        return `<span class="rel-node" data-open-event="${eid}">${esc(ev.title)}</span>`;
+      }).join("、")}${shared.length > 4 ? " 等" : ""}</div>`
+    : "";
+  const actionsHtml = `<div class="rel-actions">
+    <button class="chip" data-open-person="${aId}">查看 ${esc(A.name)} 详情</button>
+    <button class="chip" data-open-person="${bId}">查看 ${esc(B.name)} 详情</button>
+    <button class="mini-btn" data-rel-close>关闭</button></div>`;
+
+  box.hidden = false;
+  box.innerHTML = `<div class="rel-chain">${chainHtml}</div>${sharedHtml}${actionsHtml}`;
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function clearSelection() {
+  selectedNode = null;
+  if (mainChart) applyGraphFilter();
+}
+
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-rel-close]")) {
+    document.getElementById("rel-result").hidden = true;
+    clearSelection();
+  }
+});
+
 /* ---------- 人物关系主图谱 ---------- */
 let mainChart = null;
-const factionOff = {};   // factionKey -> bool
+const factionOff = {};
 
 function renderGraphLegend() {
   const box = document.getElementById("graph-legend");
@@ -357,36 +576,48 @@ function buildGraphOption(showAllLabels) {
   const nodes = PEOPLE_LIST.filter(p => !factionOff[p.faction]).map(p => {
     const f = FACTIONS[p.faction];
     const deg = DEGREE[p.id] || 0;
+    const isSel = p.id === selectedNode;
     return {
       id: p.id, name: p.name,
-      symbolSize: Math.min(16 + deg * 2.6, 44),
-      itemStyle: { color: f.color, borderColor: "rgba(0,0,0,.35)", borderWidth: .5 },
+      symbolSize: Math.min(16 + deg * 2.6, 44) + (isSel ? 12 : 0),
+      itemStyle: isSel
+        ? { color: f.color, borderColor: "#d3a94f", borderWidth: 2.5, shadowBlur: 16, shadowColor: "rgba(211,169,79,.85)" }
+        : { color: f.color, borderColor: cssVar("--graph-node-border") || "rgba(0,0,0,.35)", borderWidth: .5 },
       label: {
-        show: showAllLabels || deg >= 5,
+        show: isSel || showAllLabels || deg >= 5,
         position: "bottom",
-        color: "#cfc8b4", fontSize: 10.5, fontFamily: "serif",
+        color: cssVar("--graph-label") || "#cfc8b4",
+        fontSize: isSel ? 13 : 10.5, fontFamily: "serif",
+        fontWeight: isSel ? "bold" : "normal",
         formatter: "{b}"
       }
     };
   });
   const visible = new Set(nodes.map(n => n.id));
-  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => ({
-    source: r.a, target: r.b,
-    lineStyle: { color: "rgba(255,255,255,.16)", width: 1.2, curveness: .15 },
-    emphasis: { lineStyle: { color: "#d3a94f", width: 2.4 } },
-    t: r.t
-  }));
+  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => {
+    const hot = selectedNode && (r.a === selectedNode || r.b === selectedNode);
+    return {
+      source: r.a, target: r.b,
+      lineStyle: {
+        color: hot ? "#d3a94f" : (cssVar("--graph-edge") || "rgba(255,255,255,.16)"),
+        width: hot ? 2 : 1.2, curveness: .15
+      },
+      emphasis: { lineStyle: { color: "#d3a94f", width: 2.4 } },
+      t: r.t
+    };
+  });
   return {
     tooltip: {
-      backgroundColor: "rgba(18,21,30,.94)", borderColor: "rgba(211,169,79,.5)",
-      textStyle: { color: "#e9e4d6", fontFamily: "serif" },
+      backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
+      borderColor: "rgba(211,169,79,.5)",
+      textStyle: { color: cssVar("--ink") || "#e9e4d6", fontFamily: "serif" },
       formatter(p) {
         if (p.dataType === "edge") return `<b>${esc(PERSON_MAP[p.data.source].name)}</b> — ${esc(p.data.t)} — <b>${esc(PERSON_MAP[p.data.target].name)}</b>`;
         const person = PERSON_MAP[p.data.id];
+        const hint = selectedNode && selectedNode !== p.data.id ? "<br><span style='color:#d3a94f'>再点击此人，查询两人关系</span>" : "";
         return `<b style="font-size:15px">${esc(person.name)}</b><br>
           <span style="color:#d3a94f">${esc(person.life)} · ${esc(FACTIONS[person.faction].name)}</span><br>
-          <span style="color:#9aa2b1">${esc(person.title)}</span><br>
-          <span style="color:#7d8593">点击查看人物详情</span>`;
+          <span style="color:#9aa2b1">${esc(person.title)}</span>${hint}`;
       }
     },
     series: [{
@@ -411,17 +642,37 @@ function initGraph() {
   }
   mainChart = echarts.init(el);
   mainChart.setOption(buildGraphOption(false));
-  mainChart.on("click", p => { if (p.dataType === "node") openPerson(p.data.id); });
-
-  document.getElementById("toggle-labels").onchange = e => {
-    mainChart.setOption(buildGraphOption(e.target.checked));
-  };
+  mainChart.on("click", p => {
+    if (p.dataType !== "node") return;
+    const id = p.data.id;
+    if (!selectedNode) {
+      selectedNode = id;
+      showRelHint(id);
+      applyGraphFilter();
+    } else if (selectedNode === id) {
+      clearSelection();
+      document.getElementById("rel-result").hidden = true;
+      openPerson(id);
+    } else {
+      showRelation(selectedNode, id);
+      clearSelection();
+    }
+  });
   window.addEventListener("resize", () => mainChart && mainChart.resize());
 }
 
 function applyGraphFilter() {
   if (mainChart) mainChart.setOption(buildGraphOption(document.getElementById("toggle-labels").checked), { notMerge: true });
 }
+
+document.getElementById("toggle-labels").onchange = e => applyGraphFilter();
+
+/* ---------- 返回顶部 ---------- */
+const backTopBtn = document.getElementById("back-top");
+window.addEventListener("scroll", () => {
+  backTopBtn.classList.toggle("show", window.scrollY > 600);
+});
+backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 事件委托：卡片 / 弹窗内跳转 ---------- */
 document.addEventListener("click", e => {
@@ -432,9 +683,14 @@ document.addEventListener("click", e => {
 });
 
 /* ---------- 启动 ---------- */
+applyTheme(currentTheme(), false);
 renderCatFilters();
 renderTimeline();
 renderFactionFilters();
 renderPeopleGrid();
 renderGraphLegend();
-initGraph();
+
+(function initTabFromHash() {
+  const h = (location.hash || "").replace("#", "");
+  if (TABS.indexOf(h) !== -1) switchTab(h, false);
+})();

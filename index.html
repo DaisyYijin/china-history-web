@@ -24,34 +24,39 @@
   <!-- ================= 导航 ================= -->
   <nav class="navbar">
     <div class="nav-inner">
-      <a class="brand" href="#top">史鉴 · 华夏五千年</a>
+      <a class="brand" href="#top" data-tab-link="timeline-section">史鉴 · 华夏五千年</a>
       <div class="nav-links">
-        <a href="#timeline-section">大事年表</a>
-        <a href="#graph-section">关系图谱</a>
-        <a href="#people-section">人物志</a>
+        <a href="#timeline-section" data-tab-link="timeline-section" class="tab-link active">大事年表</a>
+        <a href="#graph-section" data-tab-link="graph-section" class="tab-link">关系图谱</a>
+        <a href="#people-section" data-tab-link="people-section" class="tab-link">人物志</a>
       </div>
       <input type="search" id="search" placeholder="搜索事件 / 人物 / 战役…" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" title="切换亮色 / 暗色主题" aria-label="切换主题">🌙</button>
     </div>
   </nav>
 
   <main id="top">
 
     <!-- ================= 大事年表 ================= -->
-    <section id="timeline-section" class="section">
+    <section id="timeline-section" class="section tab-panel tab-active">
       <div class="section-head">
         <h2>大事年表</h2>
-        <p>点击任意事件，查看经过、双方兵力与关键人物</p>
+        <p>点击时期标题可折叠 / 展开 · 点击任意事件，查看经过、双方兵力与关键人物</p>
       </div>
-      <div class="filters" id="cat-filters"></div>
+      <div class="filters">
+        <div class="filters-inline" id="cat-filters"></div>
+        <button id="era-toggle-all" class="mini-btn">展开全部</button>
+      </div>
       <div id="timeline"></div>
     </section>
 
     <!-- ================= 人物关系图谱 ================= -->
-    <section id="graph-section" class="section">
+    <section id="graph-section" class="section tab-panel">
       <div class="section-head">
         <h2>人物关系图谱</h2>
-        <p>节点大小代表人物关联度 · 点击节点查看人物详情 · 悬停连线查看关系</p>
+        <p>点击第一个人，再点击第二个人 —— 即可查询“某某和某某是什么关系” · 悬停连线查看关系 · 点击已选中的节点查看人物详情</p>
       </div>
+      <div id="rel-result" class="rel-result" hidden></div>
       <div class="graph-toolbar">
         <div class="legend" id="graph-legend"></div>
         <label class="switch"><input type="checkbox" id="toggle-labels"><span>显示全部人名</span></label>
@@ -60,16 +65,19 @@
     </section>
 
     <!-- ================= 人物志 ================= -->
-    <section id="people-section" class="section">
+    <section id="people-section" class="section tab-panel">
       <div class="section-head">
         <h2>人物志</h2>
         <p>按阵营浏览，点击卡片查看人物生平与关系</p>
       </div>
       <div class="filters" id="faction-filters"></div>
       <div id="people-grid"></div>
+      <div class="pagination" id="people-pagination"></div>
     </section>
 
   </main>
+
+  <button id="back-top" title="返回顶部" aria-label="返回顶部">↑</button>
 
   <footer class="footer">
     <p>中国通史 · 远古 — 当代 ｜ 数据依据通行历史教材与公开资料整理，传说时代人物仅具文化意义，兵力数字为常见统计口径，仅供参考学习。</p>
