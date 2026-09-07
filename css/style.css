@@ -798,3 +798,37 @@ button, .chip, .filter-btn, .mini-btn, .legend button,
   .people-grid { grid-template-columns: repeat(2, 1fr); }
   .stats .stat { min-width: 88px; }
 }
+
+/* =========================================================
+ * 版本更新按钮 & 全局 toast
+ * ========================================================= */
+.update-line { margin-top: 10px; }
+#update-btn.has-update {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(211, 169, 79, .12);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(211, 169, 79, .35); }
+  50% { box-shadow: 0 0 0 7px rgba(211, 169, 79, 0); }
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: 84px;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--panel-2);
+  border: 1px solid rgba(211, 169, 79, .55);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 14px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  box-shadow: 0 10px 30px var(--shadow-card);
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  z-index: 120;
+  max-width: 86vw;
+  text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

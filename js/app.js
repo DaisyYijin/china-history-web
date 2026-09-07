@@ -675,6 +675,53 @@ function jumpToEra(pk) {
   });
 })();
 
+/* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
+const CURRENT_VERSION = { version: "1.4.0", build: 1788749000 };
+
+function toastMsg(text, ms) {
+  let t = document.getElementById("global-toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "global-toast";
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = text;
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove("show"), ms || 2600);
+}
+
+async function checkUpdate(manual) {
+  const btn = document.getElementById("update-btn");
+  if (!btn) return;
+  if (manual) btn.textContent = "⏳ 正在检查…";
+  try {
+    const res = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error(res.status);
+    const info = await res.json();
+    if (info.build > CURRENT_VERSION.build) {
+      btn.classList.add("has-update");
+      btn.innerHTML = "🆕 发现新版本 v" + esc(info.version) + " · 点击更新";
+      btn.onclick = () => {
+        btn.textContent = "⏳ 正在更新…";
+        location.replace(location.pathname + "?v=" + info.build + "&t=" + Date.now() + location.hash);
+      };
+      if (manual) toastMsg("发现新版本 v" + info.version + "，点击按钮即可更新");
+    } else {
+      if (manual) {
+        btn.textContent = "🔄 检查更新";
+        toastMsg("已是最新版本（v" + CURRENT_VERSION.version + "）");
+      }
+    }
+  } catch (e) {
+    if (manual) {
+      btn.textContent = "🔄 检查更新";
+      toastMsg("检查更新失败：无法获取 version.json");
+    }
+  }
+}
+
 /* ---------- 事件委托：卡片 / 弹窗内跳转 ---------- */
 document.addEventListener("click", e => {
   const evCard = e.target.closest("[data-open-event]");
@@ -690,6 +737,8 @@ renderTimeline();
 renderFactionFilters();
 renderPeopleGrid();
 renderGraphLegend();
+document.getElementById("update-btn").onclick = () => checkUpdate(true);
+checkUpdate(false);   // 静默检查一次，有新版本时按钮自动亮起
 
 (function initTabFromHash() {
   const h = (location.hash || "").replace("#", "");
