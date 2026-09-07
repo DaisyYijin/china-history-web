@@ -54,23 +54,14 @@
     <section id="graph-section" class="section tab-panel">
       <div class="section-head">
         <h2>人物关系图谱</h2>
-        <p>点击第一个人，再点击第二个人 —— 即可查询“某某和某某是什么关系” · 悬停连线查看关系 · 点击已选中的节点查看人物详情</p>
+        <p>悬停连线查看关系 · 点击节点查看人物详情 · 鼠标移入图谱即停止飘动，移出后继续</p>
       </div>
-      <div id="rel-result" class="rel-result" hidden></div>
       <div class="graph-toolbar">
         <div class="legend" id="graph-legend"></div>
         <div class="graph-switches">
           <label class="switch"><input type="checkbox" id="toggle-labels"><span>显示全部人名</span></label>
           <label class="switch"><input type="checkbox" id="toggle-edge-labels"><span>显示关系文字</span></label>
         </div>
-      </div>
-      <div class="rel-query-bar">
-        <select id="rel-select-a"></select>
-        <span class="rel-q-and">和</span>
-        <select id="rel-select-b"></select>
-        <span class="rel-q-and">是什么关系？</span>
-        <button class="mini-btn" id="rel-query-btn">查询</button>
-        <button class="mini-btn" id="rel-swap-btn">互换</button>
       </div>
       <div id="graph"></div>
     </section>
@@ -82,7 +73,7 @@
         <p>按阵营浏览，点击卡片查看人物生平与关系</p>
       </div>
       <div class="filters" id="faction-filters"></div>
-      <div id="people-grid"></div>
+      <div id="people-grid" class="people-grid"></div>
       <div class="pagination" id="people-pagination"></div>
     </section>
 

@@ -23,7 +23,8 @@
   --graph-label: #cfc8b4;
   --graph-edge: rgba(255, 255, 255, .16);
   --graph-node-border: rgba(0, 0, 0, .35);
-  --edge-label-bg: rgba(0, 0, 0, .4);
+  --edge-label-bg: rgba(16, 19, 25, .6);
+  --graph-node-halo: rgba(16, 19, 25, .88);
   --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "STSong", serif;
   --kai: "Kaiti SC", "KaiTi", "STKaiti", serif;
   --radius: 10px;
@@ -497,37 +498,6 @@ body.light .nav-links a.tab-link.active { background: rgba(192, 57, 43, .09); }
 }
 .pagination .page-info { color: var(--muted); font-size: 13.5px; letter-spacing: .06em; }
 
-/* ---------- 关系查询面板 ---------- */
-.rel-result {
-  max-width: 1180px;
-  margin: 0 auto 20px;
-  padding: 16px 22px;
-  background: var(--panel);
-  border: 1px solid rgba(211, 169, 79, .45);
-  border-radius: var(--radius);
-  text-align: center;
-  font-size: 15.5px;
-  box-shadow: 0 8px 26px var(--shadow-card);
-}
-.rel-result .rel-chain {
-  display: flex; flex-wrap: wrap;
-  justify-content: center; align-items: center; gap: 8px;
-  line-height: 2;
-}
-.rel-result .rel-node {
-  color: var(--gold); font-weight: 700;
-  cursor: pointer; font-size: 16.5px;
-}
-.rel-result .rel-node:hover { text-decoration: underline; }
-.rel-result .rel-edge { color: var(--muted); padding: 0 2px; }
-.rel-result .rel-edge b { color: var(--accent); font-weight: 600; letter-spacing: .05em; }
-.rel-result .rel-sub { margin-top: 8px; font-size: 13.5px; color: var(--muted); }
-.rel-result .rel-sub .rel-node { font-size: 13.5px; font-weight: 600; }
-.rel-result .rel-actions {
-  margin-top: 10px;
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
-}
-
 /* ---------- 主题切换按钮 ---------- */
 .theme-btn {
   flex: 0 0 auto;
@@ -583,7 +553,8 @@ body.light {
   --graph-label: #5f5748;
   --graph-edge: rgba(90, 70, 30, .22);
   --graph-node-border: rgba(255, 255, 255, .65);
-  --edge-label-bg: rgba(255, 253, 245, .82);
+  --edge-label-bg: rgba(255, 253, 245, .88);
+  --graph-node-halo: rgba(255, 253, 246, .92);
   background:
     radial-gradient(1200px 500px at 80% -10%, rgba(192, 57, 43, .05), transparent 60%),
     radial-gradient(900px 420px at 10% 10%, rgba(168, 127, 44, .09), transparent 60%),
@@ -640,9 +611,6 @@ body.light .legend button:hover, body.light .filter-btn:hover { border-color: rg
 
 @media (max-width: 720px) {
   .theme-btn { width: 32px; height: 32px; font-size: 14px; }
-  .rel-result { padding: 12px 12px; font-size: 14px; }
-  .rel-result .rel-node { font-size: 15px; }
-  .rel-result .rel-edge b { display: block; margin: 2px 0; }
 }
 
 /* =========================================================
@@ -763,35 +731,70 @@ body.light .legend button:hover, body.light .filter-btn:hover { border-color: rg
   text-align: justify;
 }
 
-/* ---------- 关系查询栏 ---------- */
-.graph-switches { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
-.rel-query-bar {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-  gap: 8px;
-  margin: 0 auto 16px;
-  padding: 12px 16px;
-  max-width: 760px;
-  background: var(--soft);
-  border: 1px dashed var(--line);
-  border-radius: 999px;
-}
-.rel-query-bar select {
-  max-width: 240px;
-  padding: 7px 10px;
-  background: var(--panel-2);
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font-family: var(--serif);
-  font-size: 13.5px;
-  outline: none;
-  cursor: pointer;
-}
-.rel-query-bar select:focus { border-color: var(--gold); }
-.rel-query-bar .rel-q-and { color: var(--muted); font-size: 14px; }
-body.light .rel-query-bar { background: var(--mini-bg); }
-body.light .rel-query-bar select { background: var(--panel); }
-
 /* 弹窗内年谱配色适配亮色 */
 body.light .life-text { color: var(--ink-2); }
 body.light .life-item::before { box-shadow: 0 0 0 3px var(--panel-2); }
+
+
+/* =========================================================
+ * 移动端适配 & 触屏优化
+ * ========================================================= */
+button, .chip, .filter-btn, .mini-btn, .legend button,
+.side-era, .switch, .p-card, .t-card, .theme-btn { touch-action: manipulation; }
+
+@media (max-width: 720px) {
+  html { -webkit-text-size-adjust: 100%; }
+  .nav-inner { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .brand { font-size: 15px; order: 1; }
+  .theme-btn { order: 2; margin-left: auto; width: 32px; height: 32px; font-size: 14px; }
+  #search { order: 3; width: 100%; max-width: none; margin-left: 0; }
+  .nav-links { order: 4; width: 100%; justify-content: center; gap: 0; }
+  .nav-links a { padding: 6px 10px; font-size: 14px; }
+
+  .hero { padding: 42px 16px 34px; }
+  .hero h1 { letter-spacing: .12em; text-indent: .12em; }
+  .stats { gap: 8px; }
+  .stats .stat { min-width: 100px; padding: 9px 12px; }
+  .stats b { font-size: 21px; }
+
+  .section { padding: 38px 12px 4px; }
+  .section-head h2 { font-size: 25px; }
+  .section-head p { font-size: 12.5px; }
+  .filters { gap: 8px; margin-bottom: 20px; }
+  .filter-btn { padding: 6px 12px; font-size: 12.5px; }
+
+  .timeline { padding-left: 24px; }
+  .t-item .dot { left: -22px; width: 10px; height: 10px; }
+  .t-card { padding: 12px 14px; }
+  .t-card .t-year { font-size: 17px; min-width: 50px; }
+  .t-card .t-title { font-size: 15.5px; }
+  .t-card .t-snippet { font-size: 13px; }
+  .t-card .force-line { font-size: 11.8px; }
+
+  .legend { max-height: 106px; overflow-y: auto; scrollbar-width: thin; }
+  #graph { height: min(72vh, 560px); }
+  .graph-switches { gap: 10px; }
+  .switch span { font-size: 12.5px; }
+
+  .people-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+  .p-card .avatar { width: 52px; height: 52px; font-size: 22px; }
+  .p-card .p-name { font-size: 15.5px; }
+
+  .modal { padding: 18px 14px; max-height: 92vh; border-radius: 12px; }
+  .modal h3.m-title { font-size: 23px; }
+  .m-desc { font-size: 14.2px; }
+  .vs-multi { grid-template-columns: 1fr; }
+  .life-year { min-width: 52px; font-size: 11.5px; }
+  .life-text { font-size: 12.8px; }
+
+  #back-top { right: 12px; bottom: 14px; width: 42px; height: 42px; font-size: 17px; }
+  .pagination { gap: 8px; margin-bottom: 40px; }
+  .mini-btn { padding: 8px 16px; }
+  .footer { padding: 24px 14px 32px; font-size: 12px; }
+}
+
+/* 超窄屏（手机竖屏） */
+@media (max-width: 400px) {
+  .people-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats .stat { min-width: 88px; }
+}

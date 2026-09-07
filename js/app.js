@@ -455,117 +455,55 @@ function renderMiniGraph(centerId, color) {
   });
 }
 
-/* ---------- 关系查询（两点） ---------- */
-let selectedNode = null;      // 单点选中（点击流）
-let pairHighlight = null;     // 查询高亮 [a, b]
+/* ---------- 图谱悬停冻结（鼠标移入停止飘动） ---------- */
+let graphFrozen = false;
 
-function hotIds() {
-  if (pairHighlight) return pairHighlight;
-  if (selectedNode) return [selectedNode];
-  return null;
-}
-
-function findPath(a, b, maxDepth) {
-  maxDepth = maxDepth || 5;
-  if (a === b) return [{ id: a, relTo: null }];
-  const prev = { [a]: null };
-  let frontier = [a];
-  for (let d = 0; d < maxDepth; d++) {
-    const next = [];
-    for (const u of frontier) {
-      for (const v of (ADJ[u] || [])) {
-        if (v.to in prev) continue;
-        prev[v.to] = { from: u, rel: v.t };
-        if (v.to === b) {
-          const chain = [];
-          let cur = b;
-          while (cur) {
-            chain.unshift({ id: cur, relTo: prev[cur] ? prev[cur].rel : null });
-            cur = prev[cur] ? prev[cur].from : null;
-          }
-          return chain;
-        }
-        next.push(v.to);
-      }
-    }
-    frontier = next;
+function capturePositions() {
+  try {
+    const seriesModel = mainChart.getModel().getSeriesByIndex(0);
+    const graph = seriesModel.getGraph();
+    const pos = {};
+    graph.eachNode(node => {
+      const layout = node.getLayout();
+      if (layout && node.id) pos[node.id] = { x: layout[0], y: layout[1] };
+    });
+    return Object.keys(pos).length ? pos : null;
+  } catch (e) {
+    return null;
   }
-  return null;
 }
 
-function sharedEvents(a, b) {
-  const ea = new Set(PEOPLE[a].events || []);
-  return (PEOPLE[b].events || []).filter(e => ea.has(e));
+function buildFrozenOption() {
+  const pos = capturePositions();
+  if (!pos) return null;
+  const opt = buildGraphOption(document.getElementById("toggle-labels").checked);
+  opt.series[0].layout = "none";
+  opt.series[0].data.forEach(d => {
+    const p = pos[d.id];
+    if (p) { d.x = p.x; d.y = p.y; }
+  });
+  return opt;
 }
 
-function relNodeHtml(id) {
-  return `<span class="rel-node" data-open-person="${id}">${esc(PERSON_MAP[id].name)}</span>`;
+function freezeGraph() {
+  if (!mainChart || graphFrozen) return;
+  const opt = buildFrozenOption();
+  if (!opt) return;
+  graphFrozen = true;
+  mainChart.setOption(opt, { notMerge: true });
 }
 
-function showRelHint(id) {
-  const p = PERSON_MAP[id];
-  const box = document.getElementById("rel-result");
-  box.hidden = false;
-  box.innerHTML = `<div class="rel-chain">已选择 <span class="rel-node">${esc(p.name)}</span>
-    <span class="rel-edge">—— 再点击另一个人，查询两人的关系；再次点击本人查看详情 ——</span>
-    <button class="mini-btn" data-rel-close>取消</button></div>`;
+function unfreezeGraph() {
+  if (!mainChart || !graphFrozen) return;
+  graphFrozen = false;
+  const pos = capturePositions();
+  const opt = buildGraphOption(document.getElementById("toggle-labels").checked);
+  if (pos) opt.series[0].data.forEach(d => {
+    const p = pos[d.id];
+    if (p) { d.x = p.x; d.y = p.y; }
+  });
+  mainChart.setOption(opt, { notMerge: true });
 }
-
-function showRelation(aId, bId) {
-  const A = PERSON_MAP[aId], B = PERSON_MAP[bId];
-  const box = document.getElementById("rel-result");
-  pairHighlight = [aId, bId];
-  if (mainChart) applyGraphFilter();
-  const direct = RELATIONS.find(r =>
-    (r.a === aId && r.b === bId) || (r.a === bId && r.b === aId));
-  const shared = sharedEvents(aId, bId);
-
-  let chainHtml;
-  if (direct) {
-    chainHtml = `${relNodeHtml(aId)}<span class="rel-edge">—— <b>${esc(direct.t)}</b> ——</span>${relNodeHtml(bId)}`;
-  } else {
-    const path = findPath(aId, bId);
-    if (path) {
-      const parts = [relNodeHtml(path[0].id)];
-      for (let i = 1; i < path.length; i++) {
-        parts.push(`<span class="rel-edge">—— <b>${esc(path[i].relTo)}</b> ——</span>`);
-        parts.push(relNodeHtml(path[i].id));
-      }
-      chainHtml = parts.join("") +
-        `<div class="rel-sub">两人无直接关系，以上为最短间接关系链（${path.length - 1} 步）</div>`;
-    } else {
-      chainHtml = `${relNodeHtml(aId)}<span class="rel-edge">—— 未找到直接或间接关系（5 层以内）——</span>${relNodeHtml(bId)}`;
-    }
-  }
-
-  const sharedHtml = shared.length
-    ? `<div class="rel-sub">共同参与事件：${shared.slice(0, 4).map(eid => {
-        const ev = EVENT_MAP[eid];
-        return `<span class="rel-node" data-open-event="${eid}">${esc(ev.title)}</span>`;
-      }).join("、")}${shared.length > 4 ? " 等" : ""}</div>`
-    : "";
-  const actionsHtml = `<div class="rel-actions">
-    <button class="chip" data-open-person="${aId}">查看 ${esc(A.name)} 详情</button>
-    <button class="chip" data-open-person="${bId}">查看 ${esc(B.name)} 详情</button>
-    <button class="mini-btn" data-rel-close>关闭</button></div>`;
-
-  box.hidden = false;
-  box.innerHTML = `<div class="rel-chain">${chainHtml}</div>${sharedHtml}${actionsHtml}`;
-  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-function clearSelection() {
-  selectedNode = null;
-  pairHighlight = null;
-  if (mainChart) applyGraphFilter();
-}
-
-document.addEventListener("click", e => {
-  if (e.target.closest("[data-rel-close]")) {
-    document.getElementById("rel-result").hidden = true;
-    clearSelection();
-  }
-});
 
 /* ---------- 人物关系主图谱 ---------- */
 let mainChart = null;
@@ -590,66 +528,63 @@ function renderGraphLegend() {
 
 function buildGraphOption(showAllLabels) {
   const showEdgeLabels = document.getElementById("toggle-edge-labels").checked;
-  const hot = hotIds();
-  const hotSet = hot ? new Set(hot) : null;
   const nodes = PEOPLE_LIST.filter(p => !factionOff[p.faction]).map(p => {
     const f = FACTIONS[p.faction];
     const deg = DEGREE[p.id] || 0;
-    const isSel = hotSet && hotSet.has(p.id);
     return {
       id: p.id, name: p.name,
-      symbolSize: Math.min(16 + deg * 2.6, 44) + (isSel ? 12 : 0),
-      itemStyle: isSel
-        ? { color: f.color, borderColor: "#d3a94f", borderWidth: 2.5, shadowBlur: 16, shadowColor: "rgba(211,169,79,.85)" }
-        : { color: f.color, borderColor: cssVar("--graph-node-border") || "rgba(0,0,0,.35)", borderWidth: .5 },
+      symbolSize: Math.min(16 + deg * 2.6, 44),
+      itemStyle: { color: f.color, borderColor: cssVar("--graph-node-border") || "rgba(0,0,0,.35)", borderWidth: .5 },
       label: {
-        show: isSel || showAllLabels || deg >= 5,
-        position: "bottom",
-        color: cssVar("--graph-label") || "#cfc8b4",
-        fontSize: isSel ? 13 : 10.5, fontFamily: "serif",
-        fontWeight: isSel ? "bold" : "normal",
+        show: showAllLabels || deg >= 6,
+        position: "bottom", distance: 4,
+        color: cssVar("--ink-strong") || "#f2ead4",
+        fontSize: 11.5, fontWeight: 600, fontFamily: "serif",
+        textBorderColor: cssVar("--graph-node-halo") || "rgba(16,19,25,.85)",
+        textBorderWidth: 2.5,
         formatter: "{b}"
       }
     };
   });
   const visible = new Set(nodes.map(n => n.id));
-  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => {
-    const isHot = hotSet && (hotSet.has(r.a) && hotSet.has(r.b));
-    return {
-      source: r.a, target: r.b,
+  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => ({
+    source: r.a, target: r.b,
+    label: {
+      show: showEdgeLabels,
+      formatter: p => p.data.t,
+      fontSize: 10.5, fontFamily: "serif",
+      color: cssVar("--ink-2") || "#c4bfae",
+      backgroundColor: cssVar("--edge-label-bg") || "rgba(16,19,25,.55)",
+      borderColor: "rgba(211,169,79,.5)", borderWidth: 1,
+      borderRadius: 6, padding: [2, 6]
+    },
+    lineStyle: {
+      color: cssVar("--graph-edge") || "rgba(255,255,255,.16)",
+      width: 1.1, curveness: .15
+    },
+    emphasis: {
       label: {
-        show: isHot || showEdgeLabels,
-        formatter: p => p.data.t,
-        fontSize: isHot ? 12 : 10,
-        fontFamily: "serif",
-        color: cssVar("--graph-label") || "#cfc8b4",
-        backgroundColor: isHot ? "rgba(211,169,79,.35)" : (cssVar("--edge-label-bg") || "rgba(0,0,0,.28)"),
-        padding: [1, 5],
-        borderRadius: 3
+        show: true, fontSize: 11.5, color: "#fff8ea", fontWeight: 600,
+        backgroundColor: "rgba(192,57,43,.88)", borderColor: "rgba(211,169,79,.85)", borderWidth: 1,
+        borderRadius: 6, padding: [2, 7]
       },
-      lineStyle: {
-        color: isHot ? "#d3a94f" : (cssVar("--graph-edge") || "rgba(255,255,255,.16)"),
-        width: isHot ? 2.2 : 1.2, curveness: .15
-      },
-      emphasis: {
-        label: { show: true, fontSize: 12, color: "#f0e8d3", backgroundColor: "rgba(211,169,79,.4)", padding: [2, 6], borderRadius: 3 },
-        lineStyle: { color: "#d3a94f", width: 2.4 }
-      },
-      t: r.t
-    };
-  });
+      lineStyle: { color: "#d3a94f", width: 2.4 }
+    },
+    t: r.t
+  }));
   return {
     tooltip: {
       backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
       borderColor: "rgba(211,169,79,.5)",
       textStyle: { color: cssVar("--ink") || "#e9e4d6", fontFamily: "serif" },
+      confine: true,
       formatter(p) {
         if (p.dataType === "edge") return `<b>${esc(PERSON_MAP[p.data.source].name)}</b> — ${esc(p.data.t)} — <b>${esc(PERSON_MAP[p.data.target].name)}</b>`;
         const person = PERSON_MAP[p.data.id];
-        const hint = selectedNode && selectedNode !== p.data.id ? "<br><span style='color:#d3a94f'>再点击此人，查询两人关系</span>" : "";
         return `<b style="font-size:15px">${esc(person.name)}</b><br>
           <span style="color:#d3a94f">${esc(person.life)} · ${esc(FACTIONS[person.faction].name)}</span><br>
-          <span style="color:#9aa2b1">${esc(person.title)}</span>${hint}`;
+          <span style="color:#9aa2b1">${esc(person.title)}</span><br>
+          <span style="color:#7d8593">点击查看人物详情</span>`;
       }
     },
     series: [{
@@ -657,7 +592,7 @@ function buildGraphOption(showAllLabels) {
       force: {
         repulsion: nodes.length > 300 ? 85 : (nodes.length > 150 ? 150 : 300),
         edgeLength: nodes.length > 300 ? 38 : (nodes.length > 150 ? 52 : 80),
-        gravity: .08, friction: .2
+        gravity: .08, friction: .65
       },
       data: nodes, links,
       emphasis: { focus: "adjacency", itemStyle: { shadowBlur: 18, shadowColor: "rgba(211,169,79,.7)" } },
@@ -675,32 +610,27 @@ function initGraph() {
   mainChart = echarts.init(el);
   mainChart.setOption(buildGraphOption(false));
   mainChart.on("click", p => {
-    if (p.dataType !== "node") return;
-    const id = p.data.id;
-    if (!selectedNode) {
-      selectedNode = id;
-      pairHighlight = null;
-      showRelHint(id);
-      applyGraphFilter();
-    } else if (selectedNode === id) {
-      clearSelection();
-      document.getElementById("rel-result").hidden = true;
-      openPerson(id);
-    } else {
-      const a = selectedNode;
-      selectedNode = null;
-      showRelation(a, id);
-    }
+    if (p.dataType === "node") openPerson(p.data.id);
   });
+  // 鼠标移入即冻结布局（停止飘动），移出后恢复；触屏触摸时同样冻结
+  el.addEventListener("mouseenter", freezeGraph);
+  el.addEventListener("mouseleave", unfreezeGraph);
+  el.addEventListener("touchstart", freezeGraph, { passive: true });
   document.getElementById("toggle-edge-labels").onchange = () => applyGraphFilter();
   window.addEventListener("resize", () => mainChart && mainChart.resize());
 }
 
 function applyGraphFilter() {
-  if (mainChart) mainChart.setOption(buildGraphOption(document.getElementById("toggle-labels").checked), { notMerge: true });
+  if (!mainChart) return;
+  if (graphFrozen) {
+    const opt = buildFrozenOption();
+    if (opt) { mainChart.setOption(opt, { notMerge: true }); return; }
+    graphFrozen = false;
+  }
+  mainChart.setOption(buildGraphOption(document.getElementById("toggle-labels").checked), { notMerge: true });
 }
 
-document.getElementById("toggle-labels").onchange = e => applyGraphFilter();
+document.getElementById("toggle-labels").onchange = () => applyGraphFilter();
 
 /* ---------- 返回顶部 ---------- */
 const backTopBtn = document.getElementById("back-top");
@@ -708,29 +638,6 @@ window.addEventListener("scroll", () => {
   backTopBtn.classList.toggle("show", window.scrollY > 600);
 });
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
-/* ---------- 关系查询下拉框 ---------- */
-(function initRelQuery() {
-  const selA = document.getElementById("rel-select-a");
-  const selB = document.getElementById("rel-select-b");
-  const sorted = PEOPLE_LIST.slice().sort((x, y) => x.name.localeCompare(y.name, "zh"));
-  const opts = sorted.map(p => `<option value="${p.id}">${esc(p.name)}（${FACTIONS[p.faction].name}）</option>`).join("");
-  selA.innerHTML = opts;
-  selB.innerHTML = opts;
-  selA.value = "sunzhongshan";
-  selB.value = "huangxing";
-  document.getElementById("rel-query-btn").onclick = () => {
-    if (selA.value === selB.value) {
-      openPerson(selA.value);
-      return;
-    }
-    selectedNode = null;
-    showRelation(selA.value, selB.value);
-  };
-  document.getElementById("rel-swap-btn").onclick = () => {
-    const t = selA.value; selA.value = selB.value; selB.value = t;
-  };
-})();
 
 /* ---------- 右侧浮动导航 ---------- */
 function jumpToEra(pk) {
