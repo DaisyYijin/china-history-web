@@ -453,14 +453,40 @@ function renderMiniGraph(centerId, color) {
   miniChart.on("click", p => {
     if (p.dataType === "node" && p.data.id !== centerId) openPerson(p.data.id);
   });
+  // 迷你图同样支持：悬停节点冻结，移出恢复
+  miniChart.on("mouseover", p => {
+    if (p.dataType !== "node") return;
+    const pos = capturePositions(miniChart);
+    if (!pos) return;
+    const s = JSON.parse(JSON.stringify(miniChart.getOption().series[0]));
+    s.layout = "none";
+    s.data.forEach(d => {
+      const p2 = pos[d.id];
+      if (p2) { d.x = p2.x; d.y = p2.y; }
+    });
+    miniChart.setOption({ series: [s] }, { notMerge: true });
+  });
+  miniChart.on("globalout", () => {
+    if (!miniChart) return;
+    const pos = capturePositions(miniChart);
+    const s = JSON.parse(JSON.stringify(miniChart.getOption().series[0]));
+    s.layout = "force";
+    s.force = { repulsion: 420, edgeLength: 110, gravity: .12 };
+    if (pos) s.data.forEach(d => {
+      const p2 = pos[d.id];
+      if (p2) { d.x = p2.x; d.y = p2.y; }
+    });
+    miniChart.setOption({ series: [s] }, { notMerge: true });
+  });
 }
 
-/* ---------- 图谱悬停冻结（鼠标移入停止飘动） ---------- */
+/* ---------- 图谱悬停聚焦（悬停节点：放大聚焦 + 停止飘动） ---------- */
 let graphFrozen = false;
+let focusNodeId = null;
 
-function capturePositions() {
+function capturePositions(chart) {
   try {
-    const seriesModel = mainChart.getModel().getSeriesByIndex(0);
+    const seriesModel = chart.getModel().getSeriesByIndex(0);
     const graph = seriesModel.getGraph();
     const pos = {};
     graph.eachNode(node => {
@@ -473,31 +499,23 @@ function capturePositions() {
   }
 }
 
-function buildFrozenOption() {
-  const pos = capturePositions();
-  if (!pos) return null;
-  const opt = buildGraphOption(document.getElementById("toggle-labels").checked);
-  opt.series[0].layout = "none";
-  opt.series[0].data.forEach(d => {
-    const p = pos[d.id];
-    if (p) { d.x = p.x; d.y = p.y; }
-  });
-  return opt;
-}
-
-function freezeGraph() {
-  if (!mainChart || graphFrozen) return;
-  const opt = buildFrozenOption();
-  if (!opt) return;
+function focusNode(id) {
+  if (!mainChart || (graphFrozen && focusNodeId === id)) return;
+  const pos = capturePositions(mainChart);
+  if (!pos) return;
   graphFrozen = true;
-  mainChart.setOption(opt, { notMerge: true });
+  focusNodeId = id;
+  mainChart.setOption(
+    buildGraphOption(document.getElementById("toggle-labels").checked, id, pos),
+    { notMerge: true });
 }
 
 function unfreezeGraph() {
   if (!mainChart || !graphFrozen) return;
   graphFrozen = false;
-  const pos = capturePositions();
-  const opt = buildGraphOption(document.getElementById("toggle-labels").checked);
+  focusNodeId = null;
+  const pos = capturePositions(mainChart);
+  const opt = buildGraphOption(document.getElementById("toggle-labels").checked, null, null);
   if (pos) opt.series[0].data.forEach(d => {
     const p = pos[d.id];
     if (p) { d.x = p.x; d.y = p.y; }
@@ -526,52 +544,80 @@ function renderGraphLegend() {
   });
 }
 
-function buildGraphOption(showAllLabels) {
+function buildGraphOption(showAllLabels, focusId, positions) {
   const showEdgeLabels = document.getElementById("toggle-edge-labels").checked;
+  const neighbors = focusId ? new Set((ADJ[focusId] || []).map(v => v.to)) : null;
   const nodes = PEOPLE_LIST.filter(p => !factionOff[p.faction]).map(p => {
     const f = FACTIONS[p.faction];
     const deg = DEGREE[p.id] || 0;
-    return {
+    const isFocus = p.id === focusId;
+    const isNeighbor = neighbors && neighbors.has(p.id);
+    const dimmed = focusId && !isFocus && !isNeighbor;
+    const baseSize = Math.min(16 + deg * 2.6, 44);
+    const item = {
       id: p.id, name: p.name,
-      symbolSize: Math.min(16 + deg * 2.6, 44),
-      itemStyle: { color: f.color, borderColor: cssVar("--graph-node-border") || "rgba(0,0,0,.35)", borderWidth: .5 },
+      symbolSize: isFocus ? baseSize * 1.5 + 8 : baseSize,
+      itemStyle: {
+        color: f.color,
+        borderColor: isFocus ? "#d3a94f" : (cssVar("--graph-node-border") || "rgba(0,0,0,.35)"),
+        borderWidth: isFocus ? 3 : .5,
+        opacity: dimmed ? .15 : 1,
+        shadowBlur: isFocus ? 20 : 0,
+        shadowColor: "rgba(211,169,79,.8)"
+      },
       label: {
-        show: showAllLabels || deg >= 6,
+        show: isFocus || isNeighbor || showAllLabels || (!focusId && deg >= 6),
         position: "bottom", distance: 4,
         color: cssVar("--ink-strong") || "#f2ead4",
-        fontSize: 11.5, fontWeight: 600, fontFamily: "serif",
+        fontSize: isFocus ? 15 : (isNeighbor ? 12 : 11.5),
+        fontWeight: isFocus ? 700 : 600,
+        fontFamily: "serif",
+        opacity: dimmed ? .15 : 1,
         textBorderColor: cssVar("--graph-node-halo") || "rgba(16,19,25,.85)",
         textBorderWidth: 2.5,
         formatter: "{b}"
       }
     };
+    if (positions && positions[p.id]) {
+      item.x = positions[p.id].x;
+      item.y = positions[p.id].y;
+    }
+    return item;
   });
   const visible = new Set(nodes.map(n => n.id));
-  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => ({
-    source: r.a, target: r.b,
-    label: {
-      show: showEdgeLabels,
-      formatter: p => p.data.t,
-      fontSize: 10.5, fontFamily: "serif",
-      color: cssVar("--ink-2") || "#c4bfae",
-      backgroundColor: cssVar("--edge-label-bg") || "rgba(16,19,25,.55)",
-      borderColor: "rgba(211,169,79,.5)", borderWidth: 1,
-      borderRadius: 6, padding: [2, 6]
-    },
-    lineStyle: {
-      color: cssVar("--graph-edge") || "rgba(255,255,255,.16)",
-      width: 1.1, curveness: .15
-    },
-    emphasis: {
+  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => {
+    const touches = focusId && (r.a === focusId || r.b === focusId);
+    const dimmed = focusId && !touches;
+    return {
+      source: r.a, target: r.b,
       label: {
-        show: true, fontSize: 11.5, color: "#fff8ea", fontWeight: 600,
-        backgroundColor: "rgba(192,57,43,.88)", borderColor: "rgba(211,169,79,.85)", borderWidth: 1,
-        borderRadius: 6, padding: [2, 7]
+        show: touches || showEdgeLabels,
+        formatter: p => p.data.t,
+        fontSize: touches ? 12 : 10.5, fontFamily: "serif",
+        fontWeight: touches ? 700 : 400,
+        color: cssVar("--ink-2") || "#c4bfae",
+        backgroundColor: cssVar("--edge-label-bg") || "rgba(16,19,25,.55)",
+        borderColor: "rgba(211,169,79,.5)", borderWidth: 1,
+        borderRadius: 6, padding: [2, 6],
+        opacity: dimmed ? .12 : 1
       },
-      lineStyle: { color: "#d3a94f", width: 2.4 }
-    },
-    t: r.t
-  }));
+      lineStyle: {
+        color: touches ? "#d3a94f" : (cssVar("--graph-edge") || "rgba(255,255,255,.16)"),
+        width: touches ? 2.6 : 1.1,
+        curveness: .15,
+        opacity: dimmed ? .1 : 1
+      },
+      emphasis: {
+        label: {
+          show: true, fontSize: 12, color: "#fff8ea", fontWeight: 700,
+          backgroundColor: "rgba(192,57,43,.88)", borderColor: "rgba(211,169,79,.85)", borderWidth: 1,
+          borderRadius: 6, padding: [2, 7]
+        },
+        lineStyle: { color: "#d3a94f", width: 2.4 }
+      },
+      t: r.t
+    };
+  });
   return {
     tooltip: {
       backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
@@ -588,7 +634,9 @@ function buildGraphOption(showAllLabels) {
       }
     },
     series: [{
-      type: "graph", layout: "force", roam: true,
+      type: "graph",
+      layout: focusId ? "none" : "force",
+      roam: true,
       force: {
         repulsion: nodes.length > 300 ? 85 : (nodes.length > 150 ? 150 : 300),
         edgeLength: nodes.length > 300 ? 38 : (nodes.length > 150 ? 52 : 80),
@@ -612,10 +660,11 @@ function initGraph() {
   mainChart.on("click", p => {
     if (p.dataType === "node") openPerson(p.data.id);
   });
-  // 鼠标移入即冻结布局（停止飘动），移出后恢复；触屏触摸时同样冻结
-  el.addEventListener("mouseenter", freezeGraph);
-  el.addEventListener("mouseleave", unfreezeGraph);
-  el.addEventListener("touchstart", freezeGraph, { passive: true });
+  // 悬停到某个节点：放大聚焦该人物关系并冻结布局；移出图谱恢复
+  mainChart.on("mouseover", p => {
+    if (p.dataType === "node") focusNode(p.data.id);
+  });
+  mainChart.on("globalout", unfreezeGraph);
   document.getElementById("toggle-edge-labels").onchange = () => applyGraphFilter();
   window.addEventListener("resize", () => mainChart && mainChart.resize());
 }
@@ -623,9 +672,8 @@ function initGraph() {
 function applyGraphFilter() {
   if (!mainChart) return;
   if (graphFrozen) {
-    const opt = buildFrozenOption();
-    if (opt) { mainChart.setOption(opt, { notMerge: true }); return; }
     graphFrozen = false;
+    focusNodeId = null;
   }
   mainChart.setOption(buildGraphOption(document.getElementById("toggle-labels").checked), { notMerge: true });
 }
