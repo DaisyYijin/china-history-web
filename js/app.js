@@ -496,81 +496,46 @@ function capturePositions(chart) {
   }
 }
 
-/* 采样视图：取相距最远的两个节点，返回布局坐标、像素坐标与有效缩放 */
-function viewSample() {
-  try {
-    const pos = capturePositions(mainChart);
-    if (!pos) return null;
-    const ids = Object.keys(pos);
-    const a = pos[ids[0]];
-    let b = a, maxD = 0;
-    for (const id of ids) {
-      const p = pos[id];
-      const d = (p.x - a.x) * (p.x - a.x) + (p.y - a.y) * (p.y - a.y);
-      if (d > maxD) { maxD = d; b = p; }
-    }
-    const pa = mainChart.convertToPixel({ seriesIndex: 0 }, [a.x, a.y]);
-    const pb = mainChart.convertToPixel({ seriesIndex: 0 }, [b.x, b.y]);
-    const layoutDist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    const scale = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]) / layoutDist;
-    return { ref: ids[0], px: pa, scale };
-  } catch (e) {
-    return null;
-  }
-}
+/* ---------- 悬停钉住：悬停哪个点，只有那个点停止飘动 ---------- */
+let pinnedIds = null;   // 当前被钉住的节点 id 数组
 
-/* setOption 后按实测补偿视图（缩放 + 平移），保证画面纹丝不动 */
-function setOptionKeepView(opt) {
-  const before = viewSample();
-  mainChart.setOption(opt);
-  const mid = viewSample();
-  if (!before || !mid || !mid.scale) return;
-  const zoomFix = before.scale / mid.scale;
-  if (Math.abs(zoomFix - 1) > .001) {
-    const cur = (mainChart.getOption().series[0].zoom || 1) * zoomFix;
-    mainChart.setOption({ series: [{ zoom: cur }] });
-  }
-  const after = viewSample();
-  if (!after) return;
-  const dx = before.px[0] - after.px[0];
-  const dy = before.px[1] - after.px[1];
-  if (Math.hypot(dx, dy) > .5) {
-    try {
-      const cs = mainChart.getModel().getSeriesByIndex(0).coordinateSystem;
-      const c = cs.pointToData([mainChart.getWidth() / 2, mainChart.getHeight() / 2]);
-      // screen = centerScreen + (layout - c) * scale ⇒ 平移画面 D 需 center 反向移动 D/scale
-      mainChart.setOption({ series: [{ center: [c[0] - dx / after.scale, c[1] - dy / after.scale] }] });
-    } catch (e) { /* 忽略 */ }
-  }
-}
-
-/* ---------- 悬停节点 / 连线：冻结布局 ---------- */
-let hoverFrozen = false;
-
-function freezeByHover() {
-  if (!mainChart || hoverFrozen) return;
+function applyPin(ids) {
+  if (!mainChart) return;
   const pos = capturePositions(mainChart);
   if (!pos) return;
+  const pinSet = new Set(ids || []);
   const opt = buildGraphOption(document.getElementById("toggle-labels").checked);
-  opt.series[0].layout = "none";
   opt.series[0].data.forEach(d => {
     const p = pos[d.id];
     if (p) { d.x = p.x; d.y = p.y; }
+    if (pinSet.has(d.id)) d.fixed = true;
   });
-  hoverFrozen = true;
-  setOptionKeepView(opt);
+  mainChart.setOption(opt);
+  pinnedIds = ids && ids.length ? ids : null;
+  // setOption 会清掉悬停高亮，补发一次
+  (ids || []).forEach(id => {
+    const idx = opt.series[0].data.findIndex(d => d.id === id);
+    if (idx >= 0) mainChart.dispatchAction({ type: "highlight", seriesIndex: 0, dataIndex: idx });
+  });
 }
 
-function unfreezeByHover() {
-  if (!mainChart || !hoverFrozen) return;
-  const pos = capturePositions(mainChart);
-  const opt = buildGraphOption(document.getElementById("toggle-labels").checked);
-  if (pos) opt.series[0].data.forEach(d => {
-    const p = pos[d.id];
-    if (p) { d.x = p.x; d.y = p.y; }
-  });
-  hoverFrozen = false;
-  setOptionKeepView(opt);
+function pinFromEvent(params) {
+  let ids = null;
+  if (params.dataType === "node") {
+    ids = [params.data.id];
+  } else if (params.dataType === "edge") {
+    ids = [params.data.source, params.data.target];
+  }
+  if (!ids) return;
+  const key = ids.slice().sort().join("|");
+  const curKey = pinnedIds ? pinnedIds.slice().sort().join("|") : "";
+  if (key === curKey) return;
+  applyPin(ids);
+}
+
+function unpinAll() {
+  if (!mainChart || !pinnedIds) return;
+  applyPin(null);
 }
 
 /* ---------- 人物关系主图谱 ---------- */
@@ -713,11 +678,9 @@ function initGraph() {
   mainChart.on("click", p => {
     if (p.dataType === "node") openPerson(p.data.id);
   });
-  // 悬停到人物节点或关系连线：布局立即冻结；鼠标移出图谱恢复
-  mainChart.on("mouseover", p => {
-    if (p.dataType === "node" || p.dataType === "edge") freezeByHover();
-  });
-  mainChart.on("globalout", unfreezeByHover);
+  // 悬停到人物节点：该人物原地定住；悬停到关系连线：连线两端人物定住；其余继续飘动
+  mainChart.on("mouseover", pinFromEvent);
+  mainChart.on("globalout", unpinAll);
   document.getElementById("toggle-edge-labels").onchange = () => applyGraphFilter();
   window.addEventListener("resize", () => mainChart && mainChart.resize());
 }
@@ -760,7 +723,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "1.6.0", build: 1788760000 };
+const CURRENT_VERSION = { version: "1.7.0", build: 1788765000 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
