@@ -23,6 +23,7 @@
   --graph-label: #cfc8b4;
   --graph-edge: rgba(255, 255, 255, .16);
   --graph-node-border: rgba(0, 0, 0, .35);
+  --edge-label-bg: rgba(0, 0, 0, .4);
   --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "STSong", serif;
   --kai: "Kaiti SC", "KaiTi", "STKaiti", serif;
   --radius: 10px;
@@ -582,6 +583,7 @@ body.light {
   --graph-label: #5f5748;
   --graph-edge: rgba(90, 70, 30, .22);
   --graph-node-border: rgba(255, 255, 255, .65);
+  --edge-label-bg: rgba(255, 253, 245, .82);
   background:
     radial-gradient(1200px 500px at 80% -10%, rgba(192, 57, 43, .05), transparent 60%),
     radial-gradient(900px 420px at 10% 10%, rgba(168, 127, 44, .09), transparent 60%),
@@ -642,3 +644,154 @@ body.light .legend button:hover, body.light .filter-btn:hover { border-color: rg
   .rel-result .rel-node { font-size: 15px; }
   .rel-result .rel-edge b { display: block; margin: 2px 0; }
 }
+
+/* =========================================================
+ * 右侧浮动导航 / 生平大事记 / 关系查询栏
+ * ========================================================= */
+
+/* ---------- 右侧浮动导航 ---------- */
+#side-menu {
+  position: fixed;
+  right: 16px; top: 50%;
+  transform: translateY(-50%);
+  width: 132px;
+  max-height: 86vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 10px;
+  z-index: 85;
+  box-shadow: 0 10px 30px var(--shadow-card);
+  scrollbar-width: thin;
+}
+#side-menu .side-title {
+  font-size: 11px; letter-spacing: .3em; text-indent: .3em;
+  color: var(--gold); text-align: center;
+  margin: 2px 0 8px;
+}
+#side-menu .side-nav { display: flex; flex-direction: column; gap: 4px; }
+#side-menu .side-link {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 13.5px;
+  letter-spacing: .05em;
+  cursor: pointer;
+  transition: all .15s;
+}
+#side-menu .side-link:hover { background: var(--soft); color: var(--gold); }
+#side-menu .side-link.active {
+  background: rgba(192, 57, 43, .14);
+  color: var(--gold);
+  font-weight: 700;
+}
+#side-menu .side-divider {
+  height: 1px; margin: 10px 6px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: .4;
+}
+#side-menu .side-era {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%;
+  padding: 5px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: all .12s;
+  text-align: left;
+}
+#side-menu .side-era i {
+  font-style: normal;
+  font-size: 10px;
+  width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--gold);
+  flex: 0 0 auto;
+}
+#side-menu .side-era:hover { background: var(--soft); color: var(--ink); border-radius: 6px; }
+
+@media (max-width: 1360px) { #side-menu { display: none; } }
+
+/* ---------- 生平大事记（年谱） ---------- */
+.life-timeline {
+  position: relative;
+  padding-left: 20px;
+  margin-top: 4px;
+}
+.life-timeline::before {
+  content: "";
+  position: absolute; left: 5px; top: 6px; bottom: 6px;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(211,169,79,.5), rgba(128,128,128,.12));
+}
+.life-item {
+  position: relative;
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 5px 0;
+}
+.life-item::before {
+  content: "";
+  position: absolute; left: -20px; top: 14px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 3px var(--panel-2);
+}
+.life-year {
+  flex: 0 0 auto;
+  min-width: 64px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.life-text {
+  font-size: 13.8px;
+  line-height: 1.85;
+  color: var(--ink-2);
+  text-align: justify;
+}
+
+/* ---------- 关系查询栏 ---------- */
+.graph-switches { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.rel-query-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 8px;
+  margin: 0 auto 16px;
+  padding: 12px 16px;
+  max-width: 760px;
+  background: var(--soft);
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+}
+.rel-query-bar select {
+  max-width: 240px;
+  padding: 7px 10px;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--serif);
+  font-size: 13.5px;
+  outline: none;
+  cursor: pointer;
+}
+.rel-query-bar select:focus { border-color: var(--gold); }
+.rel-query-bar .rel-q-and { color: var(--muted); font-size: 14px; }
+body.light .rel-query-bar { background: var(--mini-bg); }
+body.light .rel-query-bar select { background: var(--panel); }
+
+/* 弹窗内年谱配色适配亮色 */
+body.light .life-text { color: var(--ink-2); }
+body.light .life-item::before { box-shadow: 0 0 0 3px var(--panel-2); }

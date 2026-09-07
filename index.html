@@ -59,7 +59,18 @@
       <div id="rel-result" class="rel-result" hidden></div>
       <div class="graph-toolbar">
         <div class="legend" id="graph-legend"></div>
-        <label class="switch"><input type="checkbox" id="toggle-labels"><span>显示全部人名</span></label>
+        <div class="graph-switches">
+          <label class="switch"><input type="checkbox" id="toggle-labels"><span>显示全部人名</span></label>
+          <label class="switch"><input type="checkbox" id="toggle-edge-labels"><span>显示关系文字</span></label>
+        </div>
+      </div>
+      <div class="rel-query-bar">
+        <select id="rel-select-a"></select>
+        <span class="rel-q-and">和</span>
+        <select id="rel-select-b"></select>
+        <span class="rel-q-and">是什么关系？</span>
+        <button class="mini-btn" id="rel-query-btn">查询</button>
+        <button class="mini-btn" id="rel-swap-btn">互换</button>
       </div>
       <div id="graph"></div>
     </section>
@@ -78,6 +89,19 @@
   </main>
 
   <button id="back-top" title="返回顶部" aria-label="返回顶部">↑</button>
+
+  <!-- ================= 右侧浮动导航 ================= -->
+  <aside id="side-menu" aria-label="快捷导航">
+    <div class="side-title">导航</div>
+    <nav class="side-nav">
+      <a class="side-link" data-tab-link="timeline-section">📜 大事年表</a>
+      <a class="side-link" data-tab-link="graph-section">🕸 关系图谱</a>
+      <a class="side-link" data-tab-link="people-section">👥 人物志</a>
+    </nav>
+    <div class="side-divider"></div>
+    <div class="side-title">时期</div>
+    <div id="side-periods"></div>
+  </aside>
 
   <footer class="footer">
     <p>中国通史 · 远古 — 当代 ｜ 数据依据通行历史教材与公开资料整理，传说时代人物仅具文化意义，兵力数字为常见统计口径，仅供参考学习。</p>
@@ -103,6 +127,8 @@
   <script src="js/era-mingqing.js"></script>
   <script src="js/era-modern-extra.js"></script>
   <script src="js/era-contemporary.js"></script>
+  <script src="js/era-family.js"></script>
+  <script src="js/people-timeline.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

@@ -98,7 +98,7 @@ function switchTab(id, push) {
     const el = document.getElementById(s);
     if (el) el.classList.toggle("tab-active", s === id);
   });
-  document.querySelectorAll(".tab-link").forEach(a =>
+  document.querySelectorAll(".tab-link, .side-link").forEach(a =>
     a.classList.toggle("active", a.dataset.tabLink === id));
   if (id === "graph-section") {
     if (!mainChart) initGraph();
@@ -370,6 +370,11 @@ function openPerson(id) {
       <span class="dot" style="background:${of_.color}"></span>${esc(other.name)}<em>· ${esc(r.t)}</em></button>`;
   }).join("");
 
+  const tl = typeof PEOPLE_TIMELINE !== "undefined" && PEOPLE_TIMELINE[id];
+  const lifeHtml = tl && tl.length ? `<h4 class="m-h4">生平大事记</h4><div class="life-timeline">
+    ${tl.map(([y, t]) => `<div class="life-item"><span class="life-year">${esc(y)}</span><span class="life-text">${esc(t)}</span></div>`).join("")}
+  </div>` : "";
+
   modalBody.innerHTML = `
     <div class="person-head">
       <div class="avatar" style="color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
@@ -383,6 +388,7 @@ function openPerson(id) {
       </div>
     </div>
     <p class="m-desc">${esc(p.bio)}</p>
+    ${lifeHtml}
     <h4 class="m-h4">参与事件</h4>
     <div class="chips">${evChips || "—"}</div>
     <h4 class="m-h4">人物关系（点击跳转）</h4>
@@ -450,7 +456,14 @@ function renderMiniGraph(centerId, color) {
 }
 
 /* ---------- 关系查询（两点） ---------- */
-let selectedNode = null;
+let selectedNode = null;      // 单点选中（点击流）
+let pairHighlight = null;     // 查询高亮 [a, b]
+
+function hotIds() {
+  if (pairHighlight) return pairHighlight;
+  if (selectedNode) return [selectedNode];
+  return null;
+}
 
 function findPath(a, b, maxDepth) {
   maxDepth = maxDepth || 5;
@@ -501,6 +514,8 @@ function showRelHint(id) {
 function showRelation(aId, bId) {
   const A = PERSON_MAP[aId], B = PERSON_MAP[bId];
   const box = document.getElementById("rel-result");
+  pairHighlight = [aId, bId];
+  if (mainChart) applyGraphFilter();
   const direct = RELATIONS.find(r =>
     (r.a === aId && r.b === bId) || (r.a === bId && r.b === aId));
   const shared = sharedEvents(aId, bId);
@@ -541,6 +556,7 @@ function showRelation(aId, bId) {
 
 function clearSelection() {
   selectedNode = null;
+  pairHighlight = null;
   if (mainChart) applyGraphFilter();
 }
 
@@ -573,10 +589,13 @@ function renderGraphLegend() {
 }
 
 function buildGraphOption(showAllLabels) {
+  const showEdgeLabels = document.getElementById("toggle-edge-labels").checked;
+  const hot = hotIds();
+  const hotSet = hot ? new Set(hot) : null;
   const nodes = PEOPLE_LIST.filter(p => !factionOff[p.faction]).map(p => {
     const f = FACTIONS[p.faction];
     const deg = DEGREE[p.id] || 0;
-    const isSel = p.id === selectedNode;
+    const isSel = hotSet && hotSet.has(p.id);
     return {
       id: p.id, name: p.name,
       symbolSize: Math.min(16 + deg * 2.6, 44) + (isSel ? 12 : 0),
@@ -595,14 +614,27 @@ function buildGraphOption(showAllLabels) {
   });
   const visible = new Set(nodes.map(n => n.id));
   const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => {
-    const hot = selectedNode && (r.a === selectedNode || r.b === selectedNode);
+    const isHot = hotSet && (hotSet.has(r.a) && hotSet.has(r.b));
     return {
       source: r.a, target: r.b,
-      lineStyle: {
-        color: hot ? "#d3a94f" : (cssVar("--graph-edge") || "rgba(255,255,255,.16)"),
-        width: hot ? 2 : 1.2, curveness: .15
+      label: {
+        show: isHot || showEdgeLabels,
+        formatter: p => p.data.t,
+        fontSize: isHot ? 12 : 10,
+        fontFamily: "serif",
+        color: cssVar("--graph-label") || "#cfc8b4",
+        backgroundColor: isHot ? "rgba(211,169,79,.35)" : (cssVar("--edge-label-bg") || "rgba(0,0,0,.28)"),
+        padding: [1, 5],
+        borderRadius: 3
       },
-      emphasis: { lineStyle: { color: "#d3a94f", width: 2.4 } },
+      lineStyle: {
+        color: isHot ? "#d3a94f" : (cssVar("--graph-edge") || "rgba(255,255,255,.16)"),
+        width: isHot ? 2.2 : 1.2, curveness: .15
+      },
+      emphasis: {
+        label: { show: true, fontSize: 12, color: "#f0e8d3", backgroundColor: "rgba(211,169,79,.4)", padding: [2, 6], borderRadius: 3 },
+        lineStyle: { color: "#d3a94f", width: 2.4 }
+      },
       t: r.t
     };
   });
@@ -647,6 +679,7 @@ function initGraph() {
     const id = p.data.id;
     if (!selectedNode) {
       selectedNode = id;
+      pairHighlight = null;
       showRelHint(id);
       applyGraphFilter();
     } else if (selectedNode === id) {
@@ -654,10 +687,12 @@ function initGraph() {
       document.getElementById("rel-result").hidden = true;
       openPerson(id);
     } else {
-      showRelation(selectedNode, id);
-      clearSelection();
+      const a = selectedNode;
+      selectedNode = null;
+      showRelation(a, id);
     }
   });
+  document.getElementById("toggle-edge-labels").onchange = () => applyGraphFilter();
   window.addEventListener("resize", () => mainChart && mainChart.resize());
 }
 
@@ -673,6 +708,52 @@ window.addEventListener("scroll", () => {
   backTopBtn.classList.toggle("show", window.scrollY > 600);
 });
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+/* ---------- 关系查询下拉框 ---------- */
+(function initRelQuery() {
+  const selA = document.getElementById("rel-select-a");
+  const selB = document.getElementById("rel-select-b");
+  const sorted = PEOPLE_LIST.slice().sort((x, y) => x.name.localeCompare(y.name, "zh"));
+  const opts = sorted.map(p => `<option value="${p.id}">${esc(p.name)}（${FACTIONS[p.faction].name}）</option>`).join("");
+  selA.innerHTML = opts;
+  selB.innerHTML = opts;
+  selA.value = "sunzhongshan";
+  selB.value = "huangxing";
+  document.getElementById("rel-query-btn").onclick = () => {
+    if (selA.value === selB.value) {
+      openPerson(selA.value);
+      return;
+    }
+    selectedNode = null;
+    showRelation(selA.value, selB.value);
+  };
+  document.getElementById("rel-swap-btn").onclick = () => {
+    const t = selA.value; selA.value = selB.value; selB.value = t;
+  };
+})();
+
+/* ---------- 右侧浮动导航 ---------- */
+function jumpToEra(pk) {
+  switchTab("timeline-section", false);
+  const key = String(pk);
+  openEras.add(key);
+  const el = document.querySelector(`#timeline .era[data-era="${key}"]`);
+  if (!el) { renderTimeline(); }
+  const target = document.querySelector(`#timeline .era[data-era="${key}"]`);
+  if (target) {
+    target.classList.add("open");
+    syncToggleAllBtn();
+    setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+}
+(function initSideMenu() {
+  const box = document.getElementById("side-periods");
+  box.innerHTML = Object.keys(PERIODS).map(k =>
+    `<button class="side-era" data-era="${k}"><i>${k}</i>${PERIODS[k].name}</button>`).join("");
+  box.querySelectorAll(".side-era").forEach(btn => {
+    btn.onclick = () => jumpToEra(btn.dataset.era);
+  });
+})();
 
 /* ---------- 事件委托：卡片 / 弹窗内跳转 ---------- */
 document.addEventListener("click", e => {
