@@ -501,22 +501,16 @@ let pinnedIds = null;   // 当前被钉住的节点 id 数组
 
 function applyPin(ids) {
   if (!mainChart) return;
-  const pos = capturePositions(mainChart);
-  if (!pos) return;
   const pinSet = new Set(ids || []);
-  const opt = buildGraphOption(document.getElementById("toggle-labels").checked);
-  opt.series[0].data.forEach(d => {
-    const p = pos[d.id];
-    if (p) { d.x = p.x; d.y = p.y; }
-    if (pinSet.has(d.id)) d.fixed = true;
-  });
-  mainChart.setOption(opt);
+  try {
+    const g = mainChart.getModel().getSeriesByIndex(0).getGraph();
+    if (!g) return;
+    g.eachNode(n => {
+      const layout = n.getLayout();
+      if (layout) layout.fixed = pinSet.has(n.id);
+    });
+  } catch (e) { /* 图表未就绪时忽略 */ }
   pinnedIds = ids && ids.length ? ids : null;
-  // setOption 会清掉悬停高亮，补发一次
-  (ids || []).forEach(id => {
-    const idx = opt.series[0].data.findIndex(d => d.id === id);
-    if (idx >= 0) mainChart.dispatchAction({ type: "highlight", seriesIndex: 0, dataIndex: idx });
-  });
 }
 
 function pinFromEvent(params) {
@@ -723,7 +717,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "1.7.0", build: 1788765000 };
+const CURRENT_VERSION = { version: "1.8.0", build: 1788770000 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
