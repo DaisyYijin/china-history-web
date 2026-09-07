@@ -23,7 +23,7 @@
   --graph-label: #cfc8b4;
   --graph-edge: rgba(255, 255, 255, .16);
   --graph-node-border: rgba(0, 0, 0, .35);
-  --edge-label-bg: rgba(16, 19, 25, .6);
+  --edge-label-bg: rgba(18, 14, 8, .85);
   --graph-node-halo: rgba(16, 19, 25, .88);
   --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "STSong", serif;
   --kai: "Kaiti SC", "KaiTi", "STKaiti", serif;
@@ -553,7 +553,7 @@ body.light {
   --graph-label: #5f5748;
   --graph-edge: rgba(90, 70, 30, .22);
   --graph-node-border: rgba(255, 255, 255, .65);
-  --edge-label-bg: rgba(255, 253, 245, .88);
+  --edge-label-bg: rgba(255, 250, 238, .95);
   --graph-node-halo: rgba(255, 253, 246, .92);
   background:
     radial-gradient(1200px 500px at 80% -10%, rgba(192, 57, 43, .05), transparent 60%),

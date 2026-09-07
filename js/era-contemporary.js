@@ -93,7 +93,7 @@ EVENTS.push(
       { side: "“联合国军”", troops: "以美军为主，最多时90余万" }
     ],
     result: "1953年7月27日《朝鲜停战协定》在板门店签字。彭德怀说：“西方侵略者几百年来只要在东方一个海岸上架起几尊大炮就可霸占一个国家的时代是一去不复返了。”黄继光、邱少云、杨根思成为新的英雄谱系。",
-    people: ["pengdehuai", "maozedong", "huangjiguang", "qiushaoyun"] },
+    people: ["pengdehuai", "maozedong", "huangjiguang", "qiushaoyun", "maoanying"] },
   { id: "renda", year: 1954, date: "1954年9月15日", category: "politics", p: 16,
     title: "第一届全国人民代表大会",
     desc: "1954年9月15日，第一届全国人民代表大会在北京中南海怀仁堂开幕，1226名代表出席。大会通过《中华人民共和国宪法》——新中国第一部宪法，确立人民代表大会制度这一根本政治制度，选举毛泽东为国家主席、刘少奇为委员长，任命周恩来为国务院总理。",

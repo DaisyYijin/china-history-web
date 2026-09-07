@@ -547,11 +547,11 @@ function buildGraphOption(showAllLabels) {
     label: {
       show: showEdgeLabels,
       formatter: p => p.data.t,
-      fontSize: 10.5, fontFamily: "serif",
-      color: cssVar("--ink-2") || "#c4bfae",
-      backgroundColor: cssVar("--edge-label-bg") || "rgba(16,19,25,.55)",
-      borderColor: "rgba(211,169,79,.5)", borderWidth: 1,
-      borderRadius: 6, padding: [2, 6]
+      fontSize: 12.5, fontWeight: 700, fontFamily: "serif",
+      color: "#ffe6bd",
+      backgroundColor: cssVar("--edge-label-bg") || "rgba(18,14,8,.85)",
+      borderColor: "rgba(211,169,79,.8)", borderWidth: 1.5,
+      borderRadius: 7, padding: [3, 9]
     },
     lineStyle: {
       color: cssVar("--graph-edge") || "rgba(255,255,255,.16)",
@@ -559,14 +559,14 @@ function buildGraphOption(showAllLabels) {
     },
     emphasis: {
       label: {
-        show: true, fontSize: 12, fontWeight: 700, fontFamily: "serif",
-        color: "#fff8ea",
-        backgroundColor: "rgba(192,57,43,.9)",
-        borderColor: "rgba(211,169,79,.85)", borderWidth: 1,
-        borderRadius: 6, padding: [3, 8],
+        show: true, fontSize: 15, fontWeight: 700, fontFamily: "serif",
+        color: "#ffffff",
+        backgroundColor: "rgba(178,45,34,.95)",
+        borderColor: "#e8c67a", borderWidth: 2,
+        borderRadius: 8, padding: [5, 12],
         formatter: p => `${PERSON_MAP[p.data.source].name} — ${p.data.t} — ${PERSON_MAP[p.data.target].name}`
       },
-      lineStyle: { color: "#d3a94f", width: 2.6 }
+      lineStyle: { color: "#d3a94f", width: 3 }
     },
     t: r.t
   }));
@@ -596,6 +596,8 @@ function buildGraphOption(showAllLabels) {
       },
       data: nodes, links,
       scaleLimit: { min: .4, max: 4 },
+      // 标签自适应：重叠的标签自动隐藏，缩放时保持可读
+      labelLayout: { hideOverlap: true },
       // 悬停节点（纯状态切换，不重建数据，视图零变动）：
       // 本节点金环放大亮名 → 邻接连线金色并标注“甲 — 关系 — 乙” → 其余节点淡出
       emphasis: {
@@ -676,7 +678,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "1.4.0", build: 1788749000 };
+const CURRENT_VERSION = { version: "1.5.0", build: 1788754000 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
