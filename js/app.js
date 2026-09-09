@@ -464,6 +464,14 @@ function renderMiniGraph(centerId, color) {
       links.push({ source: r.a, target: r.b, t: r.t });
     }
   });
+  // 共点边交替曲率：以中心为端点的连线依次 ±0.05 递增，呈放射扇形
+  const miniIdx = {};
+  links.forEach(l => {
+    const from = l.source === centerId ? l.target : l.source;
+    miniIdx[from] = miniIdx[from] || 0;
+    l.curve = ((miniIdx[from] % 2 === 0) ? 1 : -1) * (.05 + .05 * Math.floor(miniIdx[from] / 2));
+    miniIdx[from]++;
+  });
   if (miniChart) { miniChart.dispose(); miniChart = null; }
   miniChart = echarts.init(el);
   miniChart.setOption({
@@ -493,7 +501,7 @@ function renderMiniGraph(centerId, color) {
       })),
       links: links.map(l => ({
         source: l.source, target: l.target,
-        lineStyle: { color: cssVar("--graph-edge") || "rgba(255,255,255,.25)", width: 1.4, curveness: .18 },
+        lineStyle: { color: cssVar("--graph-edge") || "rgba(255,255,255,.25)", width: 1.4, curveness: l.curve || 0 },
         emphasis: { lineStyle: { color: "#d3a94f", width: 2.4 } },
         t: l.t
       })),
@@ -682,14 +690,30 @@ function buildGraphOption(showAllLabels) {
     };
   });
   const visible = new Set(nodes.map(n => n.id));
-  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => ({
-    source: r.a, target: r.b,
-    lineStyle: {
-      color: cssVar("--graph-edge") || "rgba(255,255,255,.16)",
-      width: 1.1, curveness: 0
-    },
-    t: r.t
-  }));
+  // 共点边扇形散开：同一节点发出的多条连线给交替正负曲率，避免重叠
+  const adjRank = {};
+  const rankOf = (from, to) => {
+    if (!adjRank[from]) {
+      const m = {};
+      (ADJ[from] || []).forEach((e, i) => { m[e.to] = i; });
+      adjRank[from] = m;
+    }
+    return adjRank[from][to] || 0;
+  };
+  const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => {
+    const ra = rankOf(r.a, r.b);
+    const rb = rankOf(r.b, r.a);
+    const sign = (ra + rb) % 2 === 0 ? 1 : -1;
+    const mag = Math.min(.04 + .018 * Math.min(ra, rb), .22);
+    return {
+      source: r.a, target: r.b,
+      lineStyle: {
+        color: cssVar("--graph-edge") || "rgba(255,255,255,.16)",
+        width: 1.1, curveness: sign * mag
+      },
+      t: r.t
+    };
+  });
   return {
     tooltip: {
       backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
@@ -862,7 +886,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.2.0", build: 1788959754 };
+const CURRENT_VERSION = { version: "2.3.0", build: 1788961108 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
