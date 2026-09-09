@@ -555,6 +555,7 @@ function renderGraphLegend() {
 
 function buildGraphOption(showAllLabels) {
   const showEdgeLabels = document.getElementById("toggle-edge-labels").checked;
+  const z = labelZoom;
   const nodes = PEOPLE_LIST.filter(p => !factionOff[p.faction]).map(p => {
     const f = FACTIONS[p.faction];
     const deg = DEGREE[p.id] || 0;
@@ -567,42 +568,16 @@ function buildGraphOption(showAllLabels) {
         borderWidth: .5
       },
       label: {
-        show: showAllLabels || deg >= 6,
-        position: "bottom", distance: 4,
-        color: cssVar("--ink-strong") || "#f2ead4",
-        fontSize: 11.5, fontWeight: 600, fontFamily: "serif",
-        textBorderColor: cssVar("--graph-node-halo") || "rgba(16,19,25,.85)",
-        textBorderWidth: 2.5,
-        formatter: "{b}"
+        show: showAllLabels || deg >= 6
       }
     };
   });
   const visible = new Set(nodes.map(n => n.id));
   const links = RELATIONS.filter(r => visible.has(r.a) && visible.has(r.b)).map(r => ({
     source: r.a, target: r.b,
-    label: {
-      show: showEdgeLabels,
-      formatter: p => p.data.t,
-      fontSize: 12.5, fontWeight: 700, fontFamily: "serif",
-      color: "#ffe6bd",
-      backgroundColor: cssVar("--edge-label-bg") || "rgba(18,14,8,.85)",
-      borderColor: "rgba(211,169,79,.8)", borderWidth: 1.5,
-      borderRadius: 7, padding: [3, 9]
-    },
     lineStyle: {
       color: cssVar("--graph-edge") || "rgba(255,255,255,.16)",
       width: 1.1, curveness: 0
-    },
-    emphasis: {
-      label: {
-        show: true, fontSize: 15, fontWeight: 700, fontFamily: "serif",
-        color: "#ffffff",
-        backgroundColor: "rgba(178,45,34,.95)",
-        borderColor: "#e8c67a", borderWidth: 2,
-        borderRadius: 8, padding: [5, 12],
-        formatter: p => `${PERSON_MAP[p.data.source].name} — ${p.data.t} — ${PERSON_MAP[p.data.target].name}`
-      },
-      lineStyle: { color: "#d3a94f", width: 3 }
     },
     t: r.t
   }));
@@ -632,10 +607,26 @@ function buildGraphOption(showAllLabels) {
       },
       data: nodes, links,
       scaleLimit: { min: .4, max: 4 },
-      // 标签自适应：重叠的标签自动隐藏，缩放时保持可读
       labelLayout: { hideOverlap: true },
-      // 悬停节点（纯状态切换，不重建数据，视图零变动）：
-      // 本节点金环放大亮名 → 邻接连线金色并标注“甲 — 关系 — 乙” → 其余节点淡出
+      // 节点标签：series 级配置，字号随缩放同步（见 onGraphRoam）
+      label: {
+        position: "bottom", distance: 4,
+        color: cssVar("--ink-strong") || "#f2ead4",
+        fontSize: Math.round(11.5 * z), fontWeight: 600, fontFamily: "serif",
+        textBorderColor: cssVar("--graph-node-halo") || "rgba(16,19,25,.85)",
+        textBorderWidth: 2.5,
+        formatter: "{b}"
+      },
+      // 关系线文字：series 级 edgeLabel，随缩放同步
+      edgeLabel: {
+        show: showEdgeLabels,
+        formatter: p => p.data.t,
+        fontSize: Math.round(12.5 * z), fontWeight: 700, fontFamily: "serif",
+        color: cssVar("--edge-label-fg") || "#ffe6bd",
+        backgroundColor: cssVar("--edge-label-bg") || "rgba(18,14,8,.85)",
+        borderColor: "rgba(211,169,79,.8)", borderWidth: 1.5,
+        borderRadius: 7, padding: [3, 9]
+      },
       emphasis: {
         focus: "adjacency",
         scale: 1.6,
@@ -645,12 +636,20 @@ function buildGraphOption(showAllLabels) {
         },
         label: {
           show: true, position: "bottom", distance: 6,
-          fontSize: 15, fontWeight: 700, fontFamily: "serif",
+          fontSize: Math.round(15 * z), fontWeight: 700, fontFamily: "serif",
           color: "#fff6df",
           textBorderColor: cssVar("--graph-node-halo") || "rgba(16,19,25,.9)",
           textBorderWidth: 3
         },
-        lineStyle: { color: "#d3a94f", width: 2.6 }
+        edgeLabel: {
+          show: true, fontSize: Math.round(15 * z), fontWeight: 700, fontFamily: "serif",
+          color: "#ffffff",
+          backgroundColor: "rgba(178,45,34,.95)",
+          borderColor: "#e8c67a", borderWidth: 2,
+          borderRadius: 8, padding: [5, 12],
+          formatter: p => `${PERSON_MAP[p.data.source].name} — ${p.data.t} — ${PERSON_MAP[p.data.target].name}`
+        },
+        lineStyle: { color: "#d3a94f", width: 3 }
       },
       blur: {
         itemStyle: { opacity: .12 },
@@ -659,6 +658,32 @@ function buildGraphOption(showAllLabels) {
       }
     }]
   };
+}
+
+/* 缩放时同步标签字号：监听 graphRoam，读取视图缩放，series 级合并更新
+   （不触碰 data/links，力导向模拟不受影响） */
+let labelZoom = 1;
+let labelZoomTimer = null;
+
+function onGraphRoam() {
+  if (!mainChart) return;
+  clearTimeout(labelZoomTimer);
+  labelZoomTimer = setTimeout(() => {
+    try {
+      const cs = mainChart.getModel().getSeriesByIndex(0).coordinateSystem;
+      const z = Math.min(4, Math.max(.4, cs.scaleX || 1));
+      if (Math.abs(z - labelZoom) < .04) return;
+      labelZoom = z;
+      mainChart.setOption({ series: [{
+        label: { fontSize: Math.round(11.5 * z) },
+        edgeLabel: { fontSize: Math.round(12.5 * z) },
+        emphasis: {
+          label: { fontSize: Math.round(15 * z) },
+          edgeLabel: { fontSize: Math.round(15 * z) }
+        }
+      }] });
+    } catch (e) { /* 忽略 */ }
+  }, 120);
 }
 
 function initGraph() {
@@ -672,6 +697,8 @@ function initGraph() {
   mainChart.on("click", p => {
     if (p.dataType === "node") openPerson(p.data.id);
   });
+  // 缩放/平移时同步标签字号（series 级合并更新，不影响力导向模拟）
+  mainChart.on("graphRoam", onGraphRoam);
   // 悬停到人物节点：该人物原地定住；悬停到关系连线：连线两端人物定住；其余继续飘动
   mainChart.on("mouseover", pinFromEvent);
   mainChart.on("globalout", unpinAll);
@@ -717,7 +744,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "1.8.0", build: 1788770000 };
+const CURRENT_VERSION = { version: "1.9.0", build: 1788775000 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
