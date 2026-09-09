@@ -892,3 +892,33 @@ button, .chip, .filter-btn, .mini-btn, .legend button,
   .t-card { padding-right: 14px; }
   .t-more { position: static; display: block; text-align: right; margin-top: 6px; }
 }
+
+/* ---------- 术语注释 & 大白话速览 ---------- */
+.term {
+  border-bottom: 1.5px dashed rgba(211, 169, 79, .8);
+  cursor: help;
+  text-decoration: none;
+}
+.term:hover { color: var(--gold); background: rgba(211, 169, 79, .12); }
+.term-demo { border-bottom: 1.5px dashed rgba(211, 169, 79, .8); }
+.term-pop {
+  position: fixed; z-index: 200;
+  background: var(--panel-2);
+  border: 1px solid rgba(211, 169, 79, .6);
+  border-radius: 10px;
+  padding: 12px 15px;
+  font-size: 13.5px; line-height: 1.8;
+  color: var(--ink-2);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .45);
+  font-family: var(--serif);
+}
+.term-pop b { color: var(--gold); display: block; margin-bottom: 4px; font-size: 14.5px; }
+.plain-box {
+  margin: 4px 0 16px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(211, 169, 79, .12), rgba(192, 57, 43, .08));
+  border: 1px solid rgba(211, 169, 79, .45);
+  border-radius: 10px;
+  font-size: 14.5px; line-height: 2; color: var(--ink-strong);
+}
+.plain-box b { color: var(--gold); display: block; margin-bottom: 4px; letter-spacing: .1em; }

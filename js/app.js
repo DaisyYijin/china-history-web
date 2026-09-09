@@ -42,6 +42,43 @@ function esc(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
+/* 术语自动注释：正文中的词典词条加标记，点击弹大白话解释 */
+let glossaryRegex = null;
+function glossarize(escapedText) {
+  if (typeof GLOSSARY === "undefined" || !escapedText) return escapedText;
+  try {
+    if (!glossaryRegex) {
+      // 词典键均为中文词，无需正则转义；长词优先避免短词截断匹配
+      const keys = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+      glossaryRegex = new RegExp(keys.join("|"), "g");
+    }
+    return escapedText.replace(glossaryRegex, m =>
+      `<span class="term" data-term="${m}">${m}</span>`);
+  } catch (e) { return escapedText; }
+}
+
+function showTermPop(el) {
+  hideTermPop();
+  const tip = document.createElement("div");
+  tip.className = "term-pop";
+  tip.innerHTML = `<b>${esc(el.dataset.term)}</b><br>${esc(GLOSSARY[el.dataset.term] || "")}`;
+  document.body.appendChild(tip);
+  const r = el.getBoundingClientRect();
+  const w = Math.min(340, window.innerWidth - 24);
+  tip.style.width = w + "px";
+  let x = r.left + r.width / 2 - w / 2;
+  x = Math.max(12, Math.min(x, window.innerWidth - w - 12));
+  let y = r.bottom + 8;
+  if (y + 140 > window.innerHeight) y = r.top - tip.offsetHeight - 8;
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+  tip.addEventListener("click", hideTermPop);
+  setTimeout(() => document.addEventListener("click", hideTermPop, { once: true }), 0);
+}
+function hideTermPop() {
+  document.querySelectorAll(".term-pop").forEach(e => e.remove());
+}
+
 function cssVar(name) {
   return getComputedStyle(document.body).getPropertyValue(name).trim();
 }
@@ -401,14 +438,16 @@ function openEvent(id) {
     }).join("") : `<span style="color:var(--muted);font-size:13.5px">民众自发参与，无明确个体人物记载</span>`
   }</div>`;
 
+  const plain = typeof EVENT_PLAIN !== "undefined" && EVENT_PLAIN[ev.id];
   modalBody.innerHTML = `
     <span class="m-cat" style="color:${cat.color}">${cat.name}</span><span class="m-date">${esc(ev.date)} · ${period.name}</span>
     <h3 class="m-title">${esc(ev.title)}</h3>
+    ${plain ? `<div class="plain-box"><b>🔎 一句话看懂</b><div>${esc(plain)}</div></div>` : ""}
     <h4 class="m-h4">背景与经过</h4>
-    <p class="m-desc">${esc(ev.desc)}</p>
+    <p class="m-desc">${glossarize(esc(ev.desc))}</p>
     ${forcesHtml}
     <h4 class="m-h4">结局与影响</h4>
-    <div class="result-box">${esc(ev.result)}</div>
+    <div class="result-box">${glossarize(esc(ev.result))}</div>
     ${peopleHtml}`;
   openModal();
   modalBody.scrollTop = 0;
@@ -456,7 +495,8 @@ function openPerson(id) {
         </div>
       </div>
     </div>
-    <p class="m-desc">${esc(p.bio)}</p>
+    <div class="beginner-note">先认识一下：${esc(p.name)}（${esc(p.life)}），${esc(f.name)}人物 —— ${esc(p.title)}。生词带<span class="term-demo">虚线下划线</span>的都可以点开解释。</div>
+    <p class="m-desc">${glossarize(esc(p.bio))}</p>
     ${lifeHtml}
     <h4 class="m-h4">参与事件</h4>
     <div class="chips">${evChips || '<span style="color:var(--muted);font-size:13.5px">未直接参与收录事件，主要事迹见上方生平</span>'}</div>
@@ -902,7 +942,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.5.0", build: 1788962678 };
+const CURRENT_VERSION = { version: "2.6.0", build: 1788963468 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -950,11 +990,32 @@ async function checkUpdate(manual) {
 
 /* ---------- 事件委托：卡片 / 弹窗内跳转 ---------- */
 document.addEventListener("click", e => {
+  const term = e.target.closest(".term");
+  if (term) { showTermPop(term); return; }
   const evCard = e.target.closest("[data-open-event]");
   if (evCard) { openEvent(evCard.dataset.openEvent); return; }
   const pCard = e.target.closest("[data-open-person]");
   if (pCard) { openPerson(pCard.dataset.openPerson); return; }
 });
+
+/* ---------- 新手指南 ---------- */
+document.getElementById("guide-btn").onclick = () => {
+  modalBody.innerHTML = `
+    <h3 class="m-title">📖 第一次看？三分钟上手</h3>
+    <div class="beginner-note">本站收录中国五千年历史中的 <b>${EVENTS.length}</b> 个大事件、<b>${PEOPLE_LIST.length}</b> 位人物、<b>${RELATIONS.length}</b> 组人物关系。下面教你怎么玩。</div>
+    <h4 class="m-h4">① 大事年表怎么看</h4>
+    <p class="m-desc">页面按<b>时间顺序</b>把历史分成16个时期（传说时代 → … → 当代中国）。每个时期下是当年发生的大事卡片，<b>点任意卡片</b>就能看到：这件事的<b>大白话速览</b>、来龙去脉、交战双方的<b>兵力对比</b>、结局影响、相关人物。</p>
+    <h4 class="m-h4">② 看不懂的词怎么办</h4>
+    <p class="m-desc">正文里带<span class="term-demo">虚线下划线</span>的词（比如${glossarize(esc("科举、禅让、藩镇"))}）都是历史术语，<b>点一下</b>就会弹出大白话解释。</p>
+    <h4 class="m-h4">③ 关系图谱怎么玩</h4>
+    <p class="m-desc">切换到"关系图谱"页：每个圆点是一个人（颜色代表阵营，越大越有分量）。<b>鼠标放到一个人身上</b>，他本人定住、连线亮起并显示和邻居的关系；<b>点一下人物</b>看生平；<b>点一下连线</b>看两人共同经历的事件（比如两人打过的仗）。滚轮缩放、拖拽平移。</p>
+    <h4 class="m-h4">④ 人物志怎么用</h4>
+    <p class="m-desc">按阵营浏览全部人物，<b>点卡片</b>看详细生平：他的一生按年份排成<b>年谱</b>（哪年出生、哪年考上功名、哪年打了什么仗），下面还有以他为中心的关系小图。</p>
+    <h4 class="m-h4">⑤ 顶部搜索框</h4>
+    <p class="m-desc">输入任何关键词（人名、战役名、朝代）即时过滤事件和人物。</p>`;
+  openModal();
+  modalBody.scrollTop = 0;
+};
 
 /* ---------- 启动 ---------- */
 applyTheme(currentTheme(), false);
