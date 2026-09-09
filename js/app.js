@@ -150,8 +150,8 @@ function renderTimeline() {
   });
 
   if (openEras.size === 0) {
-    const first = Object.keys(byPeriod).sort((a, b) => a - b)[0];
-    if (first != null) openEras.add(first);
+    // 默认展开全部时期：确保首次访问者能看到所有事件
+    Object.keys(byPeriod).forEach(pk => openEras.add(pk));
   }
 
   let html = "";
@@ -187,7 +187,7 @@ function renderTimeline() {
           <div class="t-snippet">${esc(ev.desc.slice(0, 64))}…</div>
           ${forceLine}
           <div class="t-people">关键人物：<i>${ev.people.map(id => esc(PERSON_MAP[id] ? PERSON_MAP[id].name : id)).join("、") || "—"}</i></div>
-        </div>
+          <span class="t-more">查看详情 ›</span>
       </div>`;
     });
     html += `</div></div></div>`;
@@ -368,15 +368,30 @@ function openEvent(id) {
   const cat = CATS[ev.category];
   const period = PERIODS[periodOf(ev)];
 
-  const forcesHtml = ev.forces ? `<h4 class="m-h4">对峙双方兵力</h4><div class="vs">
+  const catNote = {
+    war: "这是一场战争或战役，下方列出交战双方投入的兵力对比。",
+    civil: "这是一次起义或革命，下方列出对抗双方的规模。",
+    reform: "这是一次改革或思想文化运动，通常没有两军对垒，故无兵力数据。",
+    politics: "这是一次政治事件或重要会议，没有两军对垒，故无兵力数据。",
+    culture: "这是一项文明成就或科技发明，与战争无关，故无兵力数据。"
+  };
+  const adversarial = ev.category === "war" || ev.category === "civil";
+  const forcesHtml = ev.forces
+    ? `<h4 class="m-h4">${adversarial ? "对峙双方兵力" : "参与各方规模"}</h4>
+       <div class="beginner-note">${adversarial
+          ? catNote[ev.category]
+          : "这不是战争对抗——下表列出的是参与此事件的各方人员或规模，帮助你了解它的分量。"}</div>
+       <div class="vs">
       <div class="side"><div class="s-name" style="color:#e0846f">${esc(ev.forces[0].side)}</div>
         <div class="s-troops">${esc(ev.forces[0].troops)}</div></div>
-      <div class="vs-badge">对<small>峙</small></div>
+      <div class="vs-badge">${adversarial ? "对<small>峙</small>" : "参<small>与</small>"}</div>
       <div class="side"><div class="s-name" style="color:#7fa8dd">${esc(ev.forces[1].side)}</div>
         <div class="s-troops">${esc(ev.forces[1].troops)}</div></div>
-    </div>` : "";
+    </div>`
+    : `<h4 class="m-h4">事件性质</h4>
+       <div class="beginner-note">${catNote[ev.category] || catNote.politics}</div>`;
 
-  const peopleHtml = `<h4 class="m-h4">关键人物</h4><div class="chips">${
+  const peopleHtml = `<h4 class="m-h4">关键人物（点击名字可查看生平）</h4><div class="chips">${
     ev.people.length ? ev.people.map(pid => {
       const p = PERSON_MAP[pid]; if (!p) return "";
       const f = FACTIONS[p.faction];
@@ -389,6 +404,7 @@ function openEvent(id) {
   modalBody.innerHTML = `
     <span class="m-cat" style="color:${cat.color}">${cat.name}</span><span class="m-date">${esc(ev.date)} · ${period.name}</span>
     <h3 class="m-title">${esc(ev.title)}</h3>
+    <h4 class="m-h4">背景与经过</h4>
     <p class="m-desc">${esc(ev.desc)}</p>
     ${forcesHtml}
     <h4 class="m-h4">结局与影响</h4>
@@ -886,7 +902,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.4.0", build: 1788961987 };
+const CURRENT_VERSION = { version: "2.5.0", build: 1788962678 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

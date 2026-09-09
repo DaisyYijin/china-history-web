@@ -869,3 +869,26 @@ button, .chip, .filter-btn, .mini-btn, .legend button,
 .rel-ev-info b { display: block; font-size: 15px; letter-spacing: .03em; }
 .rel-ev-info span { font-size: 12px; color: var(--muted); }
 .rel-ev-card i { margin-left: auto; color: var(--gold); font-style: normal; font-size: 13px; white-space: nowrap; }
+
+/* ---------- 小白友好：事件说明条 & 卡片可点击提示 ---------- */
+.beginner-note {
+  margin: 0 0 12px;
+  padding: 9px 14px;
+  border-left: 3px solid var(--gold);
+  background: var(--soft);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.t-card { position: relative; padding-right: 96px; }
+.t-more {
+  position: absolute; right: 14px; bottom: 12px;
+  font-size: 12px; color: var(--gold); letter-spacing: .06em;
+  opacity: .75; transition: opacity .15s;
+}
+.t-card:hover .t-more { opacity: 1; }
+@media (max-width: 720px) {
+  .t-card { padding-right: 14px; }
+  .t-more { position: static; display: block; text-align: right; margin-top: 6px; }
+}
