@@ -834,3 +834,15 @@ button, .chip, .filter-btn, .mini-btn, .legend button,
   text-align: center;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 移动端图例默认折叠 ---------- */
+#legend-toggle { display: none; }
+@media (max-width: 720px) {
+  #legend-toggle { display: inline-flex; }
+  .legend { display: none; }
+  .legend.open {
+    display: flex;
+    max-height: 170px;
+    overflow-y: auto;
+  }
+}

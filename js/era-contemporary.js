@@ -163,7 +163,6 @@ EVENTS.push(
 
 RELATIONS.push(
   { a: "pengdehuai",  b: "huangjiguang", t: "志愿军英烈" },
-  { a: "maozedong",   b: "liushaoqi",   t: "开国搭档" },
   { a: "dengxiaoping", b: "chenyun",    t: "改革开放搭档" },
   { a: "dengxiaoping", b: "huyaobang",  t: "平反冤案" },
   { a: "qianxuesen",  b: "dengjiaxian", t: "两弹元勋" },

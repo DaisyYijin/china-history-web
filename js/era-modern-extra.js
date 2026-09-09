@@ -618,7 +618,7 @@ RELATIONS.push(
   { a: "zhangwentian", b: "maozedong", t: "遵义共识" },
   { a: "wangjiaxiang", b: "maozedong", t: "遵义一票" },
   { a: "renbishi",   b: "maozedong",   t: "五大书记" },
-  { a: "liushaoqi",  b: "maozedong",   t: "接班人" },
+  { a: "liushaoqi",  b: "maozedong",   t: "开国搭档 · 接班人" },
   { a: "liushaoqi",  b: "xiangying",   t: "重建新四军" },
   { a: "dongbiwu",   b: "lidazhao",    t: "建党先驱" },
   { a: "heshuheng",  b: "maozedong",   t: "湖南一师同窗" },

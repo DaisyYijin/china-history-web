@@ -1,6 +1,6 @@
 # 中国通史 · 大事年表与人物图谱
 
-一个纯静态、开箱即用的**中华通史可视化网站**：从炎黄传说到当代中国，涵盖 **390 位关键人物、219 个重大事件、362 组人物关系**，其中 84 个事件附有**交战双方兵力对比**，99 位主力人物附**逐年生平大事记**（共 968 条）。完美适配桌面端与移动端。
+一个纯静态、开箱即用的**中华通史可视化网站**：从炎黄传说到当代中国，涵盖 **403 位关键人物、221 个重大事件、376 组人物关系**，其中 84 个事件附有**交战双方兵力对比**，105 位主力人物附**逐年生平大事记**（逾千条）。完美适配桌面端与移动端。
 
 > 在线体验：本地运行后访问 `http://localhost:8080`（Docker）或 `http://localhost:8000`（Python）
 
@@ -18,7 +18,7 @@
 - **亮 / 暗双主题**：一键切换米白宣纸色与墨夜描金色，偏好本地保存。
 - **在线检查更新**：页脚“检查更新”按钮对比仓库 `version.json`，发现新版本后一键拉取最新页面。
 
-  发布新版本需同步修改三处版本号：`version.json` 的 `version`/`build`、`js/app.js` 中的 `CURRENT_VERSION`、`index.html` 中所有静态资源的 `?v=` 参数。
+  发布新版本：`python scripts/release.py 2.0.1 --commit` 一键同步三处版本号（version.json / app.js / index.html）并提交推送。
 
 ## 技术栈
 
@@ -45,7 +45,9 @@
 │   ├── era-modern-extra.js # 近代小众人物与事件补充
 │   ├── era-contemporary.js # 当代中国（1949—今）
 │   ├── era-family.js       # 家族亲属关系（黄月英、三曹、三苏等）
-│   └── people-timeline.js  # 99 位人物逐年生平大事记
+│   ├── era-patches.js      # 孤点连接 + 宋元名臣扩充
+│   └── people-timeline.js  # 105 位人物逐年生平大事记
+├── scripts/release.py      # 一键发版脚本（同步三处版本号）
 ├── Dockerfile              # Docker 镜像定义
 ├── docker-compose.yml      # 一键部署
 └── nginx.conf              # Nginx 站点配置

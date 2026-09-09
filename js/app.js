@@ -158,16 +158,21 @@ function renderTimeline() {
   Object.keys(PERIODS).forEach(pk => {
     const list = (byPeriod[pk] || []).sort((x, y) => x.year - y.year || x._order - y._order);
     if (!list.length) return;
+    const shown = list.filter(ev =>
+      (catFilter === "all" || ev.category === catFilter) &&
+      (!term || evMatch(ev, term)));
+    if (!shown.length) return;   // 该时期无匹配事件时整个时期不显示
     html += `<div class="era ${openEras.has(pk) ? "open" : ""}" data-era="${pk}">
       <div class="era-head">
         <div class="era-line"></div>
         <span>${PERIODS[pk].name}<em>${PERIODS[pk].sub}</em></span>
-        <span class="era-meta">${list.length} 事<i class="era-toggle">▾</i></span>
+        <span class="era-meta">${shown.length} 事<i class="era-toggle">▾</i></span>
       </div>
       <div class="era-body"><div class="timeline">`;
     list.forEach(ev => {
       const cat = CATS[ev.category];
-      const matched = !term || evMatch(ev, term);
+      const matched = (catFilter === "all" || ev.category === catFilter) &&
+        (!term || evMatch(ev, term));
       const forceLine = ev.forces ? `<div class="force-line">${ev.forces.map(f =>
         `<b>${esc(f.side)}</b>：${esc(f.troops)}`).join(" ｜ ")}</div>` : "";
       html += `<div class="t-item ${matched ? "" : "hidden-by-filter"}" data-ev="${ev.id}">
@@ -188,7 +193,7 @@ function renderTimeline() {
     html += `</div></div></div>`;
   });
   wrap.innerHTML = html;
-  wrap.classList.toggle("searching", !!term);
+  wrap.classList.toggle("searching", !!term || catFilter !== "all");
   syncToggleAllBtn();
 }
 
@@ -288,10 +293,14 @@ function getTerm() {
   const v = document.getElementById("search").value.trim();
   return v || "";
 }
+let searchTimer = null;
 document.getElementById("search").addEventListener("input", () => {
-  peoplePage = 1;
-  renderTimeline();
-  renderPeopleGrid();
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    peoplePage = 1;
+    renderTimeline();
+    renderPeopleGrid();
+  }, 150);
 });
 
 /* ---------- 弹窗 ---------- */
@@ -375,6 +384,11 @@ function openPerson(id) {
     ${tl.map(([y, t]) => `<div class="life-item"><span class="life-year">${esc(y)}</span><span class="life-text">${esc(t)}</span></div>`).join("")}
   </div>` : "";
 
+  const relSection = relChips
+    ? `<h4 class="m-h4">人物关系（点击跳转）</h4>
+       <div id="mini-graph"></div>
+       <div class="chips" style="margin-top:12px">${relChips}</div>`
+    : "";
   modalBody.innerHTML = `
     <div class="person-head">
       <div class="avatar" style="color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
@@ -390,10 +404,8 @@ function openPerson(id) {
     <p class="m-desc">${esc(p.bio)}</p>
     ${lifeHtml}
     <h4 class="m-h4">参与事件</h4>
-    <div class="chips">${evChips || "—"}</div>
-    <h4 class="m-h4">人物关系（点击跳转）</h4>
-    <div id="mini-graph"></div>
-    <div class="chips" style="margin-top:12px">${relChips || "暂无连线关系"}</div>`;
+    <div class="chips">${evChips || '<span style="color:var(--muted);font-size:13.5px">未直接参与收录事件，主要事迹见上方生平</span>'}</div>
+    ${relSection}`;
   openModal();
   modalBody.scrollTop = 0;
   renderMiniGraph(id, f.color);
@@ -703,6 +715,14 @@ function initGraph() {
   mainChart.on("mouseover", pinFromEvent);
   mainChart.on("globalout", unpinAll);
   document.getElementById("toggle-edge-labels").onchange = () => applyGraphFilter();
+  const legendToggle = document.getElementById("legend-toggle");
+  if (legendToggle) {
+    legendToggle.onclick = () => {
+      const lg = document.getElementById("graph-legend");
+      const open = lg.classList.toggle("open");
+      legendToggle.textContent = open ? "阵营筛选 ▴" : "阵营筛选 ▾";
+    };
+  }
   window.addEventListener("resize", () => mainChart && mainChart.resize());
 }
 
@@ -744,7 +764,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "1.9.0", build: 1788775000 };
+const CURRENT_VERSION = { version: "2.0.0", build: 1788957330 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
