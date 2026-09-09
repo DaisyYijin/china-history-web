@@ -846,3 +846,26 @@ button, .chip, .filter-btn, .mini-btn, .legend button,
     overflow-y: auto;
   }
 }
+
+/* ---------- 关系线详情弹窗 ---------- */
+.rel-head {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; flex-wrap: wrap;
+  padding: 6px 0 10px; font-size: 16px;
+}
+.rel-head .rel-arrow { color: var(--muted); }
+.rel-ev-list { margin-top: 2px; }
+.rel-ev-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; margin-bottom: 8px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+}
+.rel-ev-card:hover { border-color: var(--gold); transform: translateX(3px); }
+.rel-ev-card .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.rel-ev-info b { display: block; font-size: 15px; letter-spacing: .03em; }
+.rel-ev-info span { font-size: 12px; color: var(--muted); }
+.rel-ev-card i { margin-left: auto; color: var(--gold); font-style: normal; font-size: 13px; white-space: nowrap; }

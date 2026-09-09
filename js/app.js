@@ -323,6 +323,45 @@ document.getElementById("modal-close").onclick = closeModal;
 modalMask.addEventListener("click", e => { if (e.target === modalMask) closeModal(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !modalMask.hidden) closeModal(); });
 
+/* ---------- 关系线详情：点击连线 → 相关战役/事件 ---------- */
+function sharedEventsOf(aId, bId) {
+  const ea = new Set(PEOPLE[aId].events || []);
+  return (PEOPLE[bId].events || []).filter(e => ea.has(e));
+}
+
+function openRelation(aId, bId, t) {
+  const A = PERSON_MAP[aId], B = PERSON_MAP[bId];
+  if (!A || !B) return;
+  const shared = sharedEventsOf(aId, bId);
+  // 恰好共同参与一个事件（多为战役对手）→ 直接打开该事件详情
+  if (shared.length === 1) { openEvent(shared[0]); return; }
+  const fa = FACTIONS[A.faction], fb = FACTIONS[B.faction];
+  const evCards = shared.map(eid => {
+    const ev = EVENT_MAP[eid]; if (!ev) return "";
+    const c = CATS[ev.category];
+    return `<div class="rel-ev-card" data-open-event="${eid}">
+      <span class="dot" style="background:${c.color}"></span>
+      <div class="rel-ev-info"><b>${esc(ev.title)}</b><span>${ev.year < 0 ? "前" + (-ev.year) : ev.year} · ${esc(ev.date)} · ${c.name}</span></div>
+      <i>查看详情 ›</i>
+    </div>`;
+  }).join("");
+  modalBody.innerHTML = `
+    <div class="rel-head">
+      <button class="chip" data-open-person="${aId}"><span class="dot" style="background:${fa.color}"></span>${esc(A.name)}</button>
+      <span class="rel-arrow">— ${esc(t)} —</span>
+      <button class="chip" data-open-person="${bId}"><span class="dot" style="background:${fb.color}"></span>${esc(B.name)}</button>
+    </div>
+    ${shared.length
+      ? `<h4 class="m-h4">共同参与的事件（点击查看详情）</h4><div class="rel-ev-list">${evCards}</div>`
+      : `<div class="result-box">两人以“${esc(t)}”相连——这一关系源于生平交集（详见双方详情），未共同参与收录的战役或事件。</div>`}
+    <div class="chips" style="margin-top:14px">
+      <button class="chip" data-open-person="${aId}">查看 ${esc(A.name)} 详情</button>
+      <button class="chip" data-open-person="${bId}">查看 ${esc(B.name)} 详情</button>
+    </div>`;
+  openModal();
+  modalBody.scrollTop = 0;
+}
+
 function openEvent(id) {
   const ev = EVENT_MAP[id];
   if (!ev) return;
@@ -464,6 +503,7 @@ function renderMiniGraph(centerId, color) {
   miniChart.off("click");
   miniChart.on("click", p => {
     if (p.dataType === "node" && p.data.id !== centerId) openPerson(p.data.id);
+    else if (p.dataType === "edge") openRelation(p.data.source, p.data.target, p.data.t);
   });
   // 迷你图同样支持：悬停节点冻结，移出恢复
   miniChart.on("mouseover", p => {
@@ -708,6 +748,7 @@ function initGraph() {
   mainChart.setOption(buildGraphOption(false));
   mainChart.on("click", p => {
     if (p.dataType === "node") openPerson(p.data.id);
+    else if (p.dataType === "edge") openRelation(p.data.source, p.data.target, p.data.t);
   });
   // 缩放/平移时同步标签字号（series 级合并更新，不影响力导向模拟）
   mainChart.on("graphRoam", onGraphRoam);
@@ -764,7 +805,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.0.0", build: 1788957330 };
+const CURRENT_VERSION = { version: "2.1.0", build: 1788957613 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
