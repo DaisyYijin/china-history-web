@@ -551,18 +551,75 @@ function capturePositions(chart) {
 /* ---------- 悬停钉住：悬停哪个点，只有那个点停止飘动 ---------- */
 let pinnedIds = null;   // 当前被钉住的节点 id 数组
 
+/* 钉住机制（绝不调用 setOption，模拟不重启、视图不动）：
+   layout.fixed 减弱力推动 + rAF 每帧回写锚定坐标，彻底清零漂移 */
+let pinAnchor = null;
+let pinRafId = null;
+
+let pinIntervalId = null;
+
+function writePinAnchor() {
+  if (!pinnedIds || !mainChart || !pinAnchor) return;
+  try {
+    const g = mainChart.getModel().getSeriesByIndex(0).getGraph();
+    if (!g) return;
+    pinnedIds.forEach(id => {
+      const a = pinAnchor[id];
+      const n = g.nodes.find(nn => nn.id === id);
+      if (a && n) {
+        const l = n.getLayout();
+        if (l) { l[0] = a.x; l[1] = a.y; }
+      }
+    });
+  } catch (e) { /* 忽略 */ }
+}
+
+function stopPinLock() {
+  if (pinRafId != null) { cancelAnimationFrame(pinRafId); pinRafId = null; }
+  if (pinIntervalId != null) { clearInterval(pinIntervalId); pinIntervalId = null; }
+}
+
+function startPinLock() {
+  stopPinLock();
+  // 双保险：rAF + 8ms 间隔，确保在渲染前覆盖力导向写入的坐标
+  pinIntervalId = setInterval(writePinAnchor, 8);
+  const tick = () => {
+    if (!pinnedIds || !mainChart) { pinRafId = null; return; }
+    try {
+      const g = mainChart.getModel().getSeriesByIndex(0).getGraph();
+      if (g && pinAnchor) {
+        pinnedIds.forEach(id => {
+          const a = pinAnchor[id];
+          const n = g.nodes.find(nn => nn.id === id);
+          if (a && n) {
+            const l = n.getLayout();
+            if (l) { l[0] = a.x; l[1] = a.y; }
+          }
+        });
+      }
+    } catch (e) { /* 图表切换瞬间忽略 */ }
+    pinRafId = requestAnimationFrame(tick);
+  };
+  pinRafId = requestAnimationFrame(tick);
+}
+
 function applyPin(ids) {
   if (!mainChart) return;
   const pinSet = new Set(ids || []);
+  const anchor = {};
   try {
     const g = mainChart.getModel().getSeriesByIndex(0).getGraph();
     if (!g) return;
     g.eachNode(n => {
       const layout = n.getLayout();
-      if (layout) layout.fixed = pinSet.has(n.id);
+      if (!layout) return;
+      layout.fixed = pinSet.has(n.id);
+      if (pinSet.has(n.id)) anchor[n.id] = { x: layout[0], y: layout[1] };
     });
   } catch (e) { /* 图表未就绪时忽略 */ }
   pinnedIds = ids && ids.length ? ids : null;
+  pinAnchor = pinnedIds ? anchor : null;
+  if (pinnedIds) startPinLock(); else stopPinLock();
 }
 
 function pinFromEvent(params) {
@@ -805,7 +862,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.1.0", build: 1788957613 };
+const CURRENT_VERSION = { version: "2.2.0", build: 1788959754 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
