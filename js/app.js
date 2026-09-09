@@ -478,6 +478,18 @@ function openPerson(id) {
     ${tl.map(([y, t]) => `<div class="life-item"><span class="life-year">${esc(y)}</span><span class="life-text">${esc(t)}</span></div>`).join("")}
   </div>` : "";
 
+  const wb = typeof WIKI_BIOS !== "undefined" && WIKI_BIOS[id] && WIKI_BIOS[id].extract
+    ? WIKI_BIOS[id] : null;
+  const wikiSection = wb
+    ? `<h4 class="m-h4">📖 扩展阅读 · 维基百科</h4>
+       <div class="wiki-box">
+         <div class="wiki-text">${glossarize(esc(wb.extract))}</div>
+         <div class="wiki-foot">
+           <a href="${esc(wb.url)}" target="_blank" rel="noopener">查看完整条目 ↗</a>
+           <span>内容来自维基百科，CC BY-SA 4.0 授权</span>
+         </div>
+       </div>`
+    : "";
   const relSection = relChips
     ? `<h4 class="m-h4">人物关系（点击跳转）</h4>
        <div id="mini-graph"></div>
@@ -500,7 +512,8 @@ function openPerson(id) {
     ${lifeHtml}
     <h4 class="m-h4">参与事件</h4>
     <div class="chips">${evChips || '<span style="color:var(--muted);font-size:13.5px">未直接参与收录事件，主要事迹见上方生平</span>'}</div>
-    ${relSection}`;
+    ${relSection}
+    ${wikiSection}`;
   openModal();
   modalBody.scrollTop = 0;
   renderMiniGraph(id, f.color);
@@ -942,7 +955,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.7.0", build: 1788964727 };
+const CURRENT_VERSION = { version: "2.8.0", build: 1788965398 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1026,6 +1039,14 @@ renderPeopleGrid();
 renderGraphLegend();
 document.getElementById("update-btn").onclick = () => checkUpdate(true);
 checkUpdate(false);   // 静默检查一次，有新版本时按钮自动亮起
+
+/* 动态加载维基扩展阅读数据（由 scripts/fetch-wiki.py 生成；不存在则静默跳过） */
+(function loadWikiBios() {
+  const s = document.createElement("script");
+  s.src = "js/wiki-bios.js?v=" + CURRENT_VERSION.build;
+  s.onerror = () => s.remove();
+  document.head.appendChild(s);
+})();
 
 (function initTabFromHash() {
   const h = (location.hash || "").replace("#", "");
