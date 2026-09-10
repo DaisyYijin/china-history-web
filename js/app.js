@@ -478,6 +478,20 @@ function openPerson(id) {
     ${tl.map(([y, t]) => `<div class="life-item"><span class="life-year">${esc(y)}</span><span class="life-text">${esc(t)}</span></div>`).join("")}
   </div>` : "";
 
+  const ex = typeof PEOPLE_EXTRA !== "undefined" && PEOPLE_EXTRA[id];
+  const quotesHtml = ex && ex.quotes && ex.quotes.length
+    ? `<h4 class="m-h4">💬 名言金句</h4><div class="quote-list">
+        ${ex.quotes.map(([q, c]) => `<div class="quote-item"><div class="quote-text">「${esc(q)}」</div><div class="quote-ctx">${glossarize(esc(c))}</div></div>`).join("")}
+      </div>` : "";
+  const worksHtml = ex && ex.works && ex.works.length
+    ? `<h4 class="m-h4">📜 代表作品</h4><div class="work-list">
+        ${ex.works.map(([t, body, note]) => `<div class="work-box"><div class="work-title">${esc(t)}</div><div class="work-text">${esc(body).replace(/\n/g, "<br>")}</div><div class="work-note">${glossarize(esc(note))}</div></div>`).join("")}
+      </div>` : "";
+  const assessHtml = ex && ex.assess && ex.assess.length
+    ? `<h4 class="m-h4">🏛 后世评价</h4><ul class="assess-list">
+        ${ex.assess.map(a => `<li>${glossarize(esc(a))}</li>`).join("")}
+      </ul>` : "";
+
   const wb = typeof WIKI_BIOS !== "undefined" && WIKI_BIOS[id] && WIKI_BIOS[id].extract
     ? WIKI_BIOS[id] : null;
   const wikiSection = wb
@@ -510,6 +524,9 @@ function openPerson(id) {
     <div class="beginner-note">先认识一下：${esc(p.name)}（${esc(p.life)}），${esc(f.name)}人物 —— ${esc(p.title)}。生词带<span class="term-demo">虚线下划线</span>的都可以点开解释。</div>
     <p class="m-desc">${glossarize(esc(p.bio))}</p>
     ${lifeHtml}
+    ${quotesHtml}
+    ${worksHtml}
+    ${assessHtml}
     <h4 class="m-h4">参与事件</h4>
     <div class="chips">${evChips || '<span style="color:var(--muted);font-size:13.5px">未直接参与收录事件，主要事迹见上方生平</span>'}</div>
     ${relSection}
@@ -955,7 +972,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.9.0", build: 1788997819 };
+const CURRENT_VERSION = { version: "2.10.0", build: 1788998486 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

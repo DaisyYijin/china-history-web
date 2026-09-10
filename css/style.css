@@ -737,6 +737,71 @@ body.light .legend button:hover, body.light .filter-btn:hover { border-color: rg
 body.light .life-text { color: var(--ink-2); }
 body.light .life-item::before { box-shadow: 0 0 0 3px var(--panel-2); }
 
+/* ---------- 名言金句 / 代表作品 / 后世评价 ---------- */
+.quote-list { display: flex; flex-direction: column; gap: 10px; }
+.quote-item {
+  padding: 10px 14px;
+  border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0;
+  background: var(--panel-2);
+}
+.quote-text {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.8;
+  color: var(--ink);
+  letter-spacing: .02em;
+}
+.quote-ctx {
+  margin-top: 4px;
+  font-size: 12.8px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+.work-list { display: flex; flex-direction: column; gap: 12px; }
+.work-box {
+  padding: 14px 16px 12px;
+  border: 1px solid rgba(211,169,79,.28);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.work-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.work-text {
+  font-family: "Kaiti SC", "KaiTi", "STKaiti", serif;
+  font-size: 15.5px;
+  line-height: 2;
+  color: var(--ink);
+  text-align: center;
+  letter-spacing: .06em;
+}
+.work-note {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(128,128,128,.25);
+  font-size: 12.8px;
+  line-height: 1.7;
+  color: var(--muted);
+  text-align: left;
+}
+.assess-list {
+  margin: 2px 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.assess-list li {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--ink-2);
+}
+.assess-list li::marker { color: var(--gold); }
+
 
 /* =========================================================
  * 移动端适配 & 触屏优化
