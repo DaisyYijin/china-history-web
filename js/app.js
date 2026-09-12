@@ -142,8 +142,11 @@ function switchTab(id, push) {
     else if (mainChart) mainChart.resize();
   }
   if (id === "map-section") {
-    if (!periodMapChart) initPeriodMap();
-    else if (periodMapChart) periodMapChart.resize();
+    // 延迟到脚本全部执行完（加载期 hash 直达此 tab 时，模块底部的声明尚未初始化）
+    setTimeout(() => {
+      if (!periodMapChart) initPeriodMap();
+      else periodMapChart.resize();
+    }, 0);
   }
   if (push !== false) try { history.replaceState(null, "", "#" + id); } catch (e) {}
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -997,7 +1000,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.17.0", build: 1789171843 };
+const CURRENT_VERSION = { version: "2.17.1", build: 1789172518 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1097,8 +1100,8 @@ checkUpdate(false);   // 静默检查一次，有新版本时按钮自动亮起
 
 
 /* ---------- 疆域变迁地图 ---------- */
-let periodMapChart = null;
-let mapCurrentPk = 4;
+var periodMapChart = null;
+var mapCurrentPk = 4;
 
 const MAP_DIM = () => (document.body.classList.contains("light") ? "#e8e2d2" : "#272c38");
 const MAP_DIM_LINE = () => (document.body.classList.contains("light") ? "rgba(90,80,60,.35)" : "rgba(255,255,255,.08)");
@@ -1138,27 +1141,23 @@ function renderPeriodMap() {
   const period = PERIODS[mapCurrentPk];
   const polities = Object.assign({}, cfg.polities || {}, cfg.polities2 || {});
 
-  // 34 省份着色：data 中给出的政权色 / 其余暗色
   const listed = cfg.areas || {};
-  const data = [];
-  periodMapChart.getOption(); // 确保地图已注册
   const geoJson = echarts.getMap("china") ? echarts.getMap("china").geoJson : null;
   const names = geoJson ? geoJson.features.map(f => f.properties.name) : [];
-  names.forEach(n => {
+  const data = names.map(n => {
     const pk = listed[n];
-    if (pk && polities[pk]) {
-      data.push({ name: n, itemStyle: { areaColor: polities[pk].color, borderColor: "rgba(0,0,0,.25)" },
-                  emphasis: { itemStyle: { areaColor: polities[pk].color } },
-                  tooltip: { formatter: `<b>${n}</b> · ${polities[pk].name}` } });
-    } else {
-      data.push({ name: n, itemStyle: { areaColor: MAP_DIM(), borderColor: MAP_DIM_LINE() },
-                  emphasis: { itemStyle: { areaColor: MAP_DIM() } },
-                  tooltip: { formatter: `<b>${n}</b> · 时期内无有效控制` } });
-    }
+    const pol = pk && polities[pk] ? polities[pk] : null;
+    return pol
+      ? { name: n, pol: pol.name,
+          itemStyle: { areaColor: pol.color, borderColor: "rgba(0,0,0,.25)" },
+          emphasis: { itemStyle: { areaColor: pol.color } } }
+      : { name: n, pol: null,
+          itemStyle: { areaColor: MAP_DIM(), borderColor: MAP_DIM_LINE() },
+          emphasis: { itemStyle: { areaColor: MAP_DIM() } } };
   });
 
   const caps = (cfg.caps || []).map(([name, lng, lat, kind]) => ({
-    name, coord: [lng, lat],
+    name, value: [lng, lat],
     symbol: kind === 1 ? "pin" : "circle",
     symbolSize: kind === 1 ? 34 : 13,
     itemStyle: { color: kind === 1 ? "#e8c67a" : "#d3a94f", borderColor: "rgba(0,0,0,.4)", borderWidth: 1 },
@@ -1173,32 +1172,52 @@ function renderPeriodMap() {
       backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
       borderColor: "rgba(211,169,79,.5)",
       textStyle: { color: cssVar("--ink") || "#e9e4d6", fontFamily: "serif", fontSize: 13 },
-      confine: true
-    },
-    series: [{
-      type: "map", map: "china", roam: true,
-      zoom: 1.12,
-      aspectScale: .82,
-      label: { show: false },
-      itemStyle: { borderColor: "rgba(0,0,0,.25)", borderWidth: .6 },
-      data,
-      markPoint: {
-        symbol: "pin",
-        data: caps,
-        tooltip: { formatter: p => `<b>${p.name}</b>` }
+      confine: true,
+      formatter: p => {
+        if (p.seriesType === "map") return `<b>${p.name}</b>${p.data.pol ? " · " + p.data.pol : " · 时期内无有效控制"}`;
+        return `<b>${p.name}</b>`;
       }
-    }]
+    },
+    geo: {
+      map: "china", roam: true, zoom: 1.12, aspectScale: .82,
+      itemStyle: { borderColor: "rgba(0,0,0,.25)", borderWidth: .6 },
+      label: { show: false },
+      select: { disabled: true }
+    },
+    series: [
+      { type: "map", map: "china", geoIndex: 0, data },
+      { type: "scatter", coordinateSystem: "geo", data: caps,
+        zlevel: 2, silent: false },
+      ...(cfg.bounds && cfg.bounds.length ? [{
+        type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
+        data: cfg.bounds.map(b => ({ name: b.name, pts: b.pts, pol: b.pol, lost: b.lost })),
+        renderItem: (params, api) => {
+          const d = params.data;
+          const pts = d.pts.map(pt => api.coord(pt));
+          const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
+          return {
+            type: "polygon",
+            shape: { points: pts, smooth: .25 },
+            style: d.lost
+              ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
+                  lineDash: [7, 5], opacity: .95 }
+              : { fill: polColor, opacity: .38, stroke: polColor, lineWidth: 1.6 }
+          };
+        }
+      }] : [])
+    ]
   }, true);
 
-  // 信息卡
   const legendHtml = Object.entries(polities).map(([k, v]) =>
     `<span class="map-leg"><i style="background:${v.color}"></i>${esc(v.name)}</span>`).join("");
+  const boundsHtml = (cfg.bounds || []).map(b =>
+    `<span class="map-leg"><i style="background:${b.lost ? "rgba(150,40,40,.35)" : (polities[b.pol] ? polities[b.pol].color : "#b0553c")};opacity:.75;${b.lost ? "border:1.5px dashed #c05050;" : ""}"></i>${esc(b.name)}</span>`).join("");
   document.getElementById("map-info").innerHTML = `
     <div class="map-info-head">
       <h3>${esc(period.name)} <span class="map-years">${esc(cfg.years)}</span></h3>
       <p class="map-desc">${esc(cfg.desc)}</p>
     </div>
-    <div class="map-legend">${legendHtml}
+    <div class="map-legend">${legendHtml}${boundsHtml}
       ${cfg.outside ? `<span class="map-leg map-leg-out">↕ 底图之外：${esc(cfg.outside)}</span>` : ""}
     </div>`;
 }
