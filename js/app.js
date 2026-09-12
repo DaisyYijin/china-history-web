@@ -795,7 +795,7 @@ function buildGraphOption(showAllLabels) {
       source: r.a, target: r.b,
       lineStyle: {
         color: cssVar("--graph-edge") || "rgba(255,255,255,.16)",
-        width: 1.1, curveness: sign * mag
+        width: 1.4, curveness: sign * mag
       },
       t: r.t
     };
@@ -836,9 +836,12 @@ function buildGraphOption(showAllLabels) {
         textBorderWidth: 2.5,
         formatter: "{b}"
       },
-      // 关系线文字：series 级 edgeLabel，随缩放同步
+      // 关系线文字：默认关闭（悬停人物时邻接线文字经 emphasis 始终显示），开关打开后全部显示。
+      // rotate:0 必须显式设置——ECharts 默认把边标签沿线的角度旋转，细线上斜漂的文字看起来像乱飞；
+      // formatter 不可返回空串——空文字仍会渲染背景药丸
       edgeLabel: {
-        show: showEdgeLabels,
+        show: showEdgeLabels && labelZoom >= EDGE_LABEL_MIN_Z,
+        rotate: 0,
         formatter: p => p.data.t,
         fontSize: Math.round(12.5 * z), fontWeight: 700, fontFamily: "serif",
         color: cssVar("--edge-label-fg") || "#ffe6bd",
@@ -861,7 +864,7 @@ function buildGraphOption(showAllLabels) {
           textBorderWidth: 3
         },
         edgeLabel: {
-          show: true, fontSize: Math.round(15 * z), fontWeight: 700, fontFamily: "serif",
+          show: true, rotate: 0, fontSize: Math.round(15 * z), fontWeight: 700, fontFamily: "serif",
           color: "#ffffff",
           backgroundColor: "rgba(178,45,34,.95)",
           borderColor: "#e8c67a", borderWidth: 2,
@@ -883,26 +886,34 @@ function buildGraphOption(showAllLabels) {
    （不触碰 data/links，力导向模拟不受影响） */
 let labelZoom = 1;
 let labelZoomTimer = null;
+/* 低于该缩放倍率时隐藏关系线文字（总览图线长且稀，标签会漂浮在空白处） */
+const EDGE_LABEL_MIN_Z = 1.0;
+
+/* 读取当前实际缩放并同步字号与关系文字显示（初始化/筛选重建后也需调用，
+   因为自动缩放不触发 graphRoam 事件） */
+function syncGraphZoom(force) {
+  if (!mainChart) return;
+  try {
+    const cs = mainChart.getModel().getSeriesByIndex(0).coordinateSystem;
+    const z = Math.min(4, Math.max(.4, cs.scaleX || 1));
+    if (!force && Math.abs(z - labelZoom) < .04) return;
+    labelZoom = z;
+    const edgeOn = document.getElementById("toggle-edge-labels").checked && z >= EDGE_LABEL_MIN_Z;
+    mainChart.setOption({ series: [{
+      label: { fontSize: Math.round(11.5 * z) },
+      edgeLabel: { show: edgeOn, fontSize: Math.round(12.5 * z) },
+      emphasis: {
+        label: { fontSize: Math.round(15 * z) },
+        edgeLabel: { fontSize: Math.round(15 * z) }
+      }
+    }] });
+  } catch (e) { /* 忽略 */ }
+}
 
 function onGraphRoam() {
   if (!mainChart) return;
   clearTimeout(labelZoomTimer);
-  labelZoomTimer = setTimeout(() => {
-    try {
-      const cs = mainChart.getModel().getSeriesByIndex(0).coordinateSystem;
-      const z = Math.min(4, Math.max(.4, cs.scaleX || 1));
-      if (Math.abs(z - labelZoom) < .04) return;
-      labelZoom = z;
-      mainChart.setOption({ series: [{
-        label: { fontSize: Math.round(11.5 * z) },
-        edgeLabel: { fontSize: Math.round(12.5 * z) },
-        emphasis: {
-          label: { fontSize: Math.round(15 * z) },
-          edgeLabel: { fontSize: Math.round(15 * z) }
-        }
-      }] });
-    } catch (e) { /* 忽略 */ }
-  }, 120);
+  labelZoomTimer = setTimeout(() => syncGraphZoom(false), 120);
 }
 
 function initGraph() {
@@ -913,6 +924,9 @@ function initGraph() {
   }
   mainChart = echarts.init(el);
   mainChart.setOption(buildGraphOption(false));
+  // 自动缩放不触发 graphRoam：布局稳定后主动同步实际缩放（两次以防中途收敛）
+  setTimeout(() => syncGraphZoom(true), 700);
+  setTimeout(() => syncGraphZoom(true), 2200);
   mainChart.on("click", p => {
     if (p.dataType === "node") openPerson(p.data.id);
     else if (p.dataType === "edge") openRelation(p.data.source, p.data.target, p.data.t);
@@ -922,7 +936,12 @@ function initGraph() {
   // 悬停到人物节点：该人物原地定住；悬停到关系连线：连线两端人物定住；其余继续飘动
   mainChart.on("mouseover", pinFromEvent);
   mainChart.on("globalout", unpinAll);
-  document.getElementById("toggle-edge-labels").onchange = () => applyGraphFilter();
+  document.getElementById("toggle-edge-labels").onchange = () => {
+    if (document.getElementById("toggle-edge-labels").checked) {
+      toastMsg("已显示关系线文字（自动避让重叠）；悬停人物可高亮其全部关系");
+    }
+    applyGraphFilter();
+  };
   const legendToggle = document.getElementById("legend-toggle");
   if (legendToggle) {
     legendToggle.onclick = () => {
@@ -937,6 +956,8 @@ function initGraph() {
 function applyGraphFilter() {
   if (!mainChart) return;
   mainChart.setOption(buildGraphOption(document.getElementById("toggle-labels").checked));
+  // 重建后视图回到自适应缩放，主动同步（延迟等布局收敛）
+  setTimeout(() => syncGraphZoom(true), 600);
 }
 
 document.getElementById("toggle-labels").onchange = () => applyGraphFilter();
@@ -972,7 +993,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.16.0", build: 1789170268 };
+const CURRENT_VERSION = { version: "2.16.1", build: 1789171421 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
