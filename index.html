@@ -6,7 +6,7 @@
   <title>中国通史 · 大事年表与人物图谱（远古 — 当代）</title>
   <meta name="description" content="中华上下五千年：大事年表、战役兵力对比、历代人物志与人物关系图谱。从炎黄传说到新时代。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%23c0392b'/%3E%3Ctext x='50' y='72' font-size='62' text-anchor='middle' fill='%23fff' font-family='serif'%3E史%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css?v=2.16.1">
+  <link rel="stylesheet" href="css/style.css?v=2.17.0">
 </head>
 <body>
 
@@ -29,6 +29,7 @@
         <a href="#timeline-section" data-tab-link="timeline-section" class="tab-link active">大事年表</a>
         <a href="#graph-section" data-tab-link="graph-section" class="tab-link">关系图谱</a>
         <a href="#people-section" data-tab-link="people-section" class="tab-link">人物志</a>
+        <a href="#map-section" data-tab-link="map-section" class="tab-link">疆域图</a>
       </div>
       <input type="search" id="search" placeholder="搜索事件 / 人物 / 战役…" autocomplete="off">
       <button id="guide-btn" class="theme-btn" title="新手使用指南" aria-label="新手指南">📖</button>
@@ -79,6 +80,23 @@
       <div class="pagination" id="people-pagination"></div>
     </section>
 
+    <!-- ================= 疆域图 ================= -->
+    <section id="map-section" class="section tab-panel">
+      <div class="section-head">
+        <h2>疆域变迁</h2>
+        <p>十六个时期，一张地图看中国疆域的伸缩与分合</p>
+      </div>
+      <div class="map-toolbar">
+        <button class="map-nav-btn" id="map-prev" aria-label="上一时期">‹ 上一时期</button>
+        <div class="map-eras" id="map-eras"></div>
+        <button class="map-nav-btn" id="map-next" aria-label="下一时期">下一时期 ›</button>
+      </div>
+      <div id="china-map" class="china-map"></div>
+      <div class="map-info" id="map-info"></div>
+      <p class="map-note">※ 示意地图：以当代中国疆域为底图，以今省域为单位粗略着色，历史边界与政区为约数；
+      域外政权仅作文字标注。内容仅作历史教学示意，不代表任何现实主张。</p>
+    </section>
+
   </main>
 
   <button id="back-top" title="返回顶部" aria-label="返回顶部">↑</button>
@@ -90,6 +108,7 @@
       <a class="side-link" data-tab-link="timeline-section">📜 大事年表</a>
       <a class="side-link" data-tab-link="graph-section">🕸 关系图谱</a>
       <a class="side-link" data-tab-link="people-section">👥 人物志</a>
+      <a class="side-link" data-tab-link="map-section">🗺 疆域图</a>
     </nav>
     <div class="side-divider"></div>
     <div class="side-title">时期</div>
@@ -111,69 +130,71 @@
     </div>
   </div>
 
-  <script defer src="lib/echarts.min.js?v=2.16.1"></script>
-  <script defer src="js/people.js?v=2.16.1"></script>
-  <script defer src="js/events.js?v=2.16.1"></script>
-  <script defer src="js/relations.js?v=2.16.1"></script>
-  <script defer src="js/era-xianqin.js?v=2.16.1"></script>
-  <script defer src="js/era-qinhan.js?v=2.16.1"></script>
-  <script defer src="js/era-suitang.js?v=2.16.1"></script>
-  <script defer src="js/era-songyuan.js?v=2.16.1"></script>
-  <script defer src="js/era-mingqing.js?v=2.16.1"></script>
-  <script defer src="js/era-modern-extra.js?v=2.16.1"></script>
-  <script defer src="js/era-contemporary.js?v=2.16.1"></script>
-  <script defer src="js/era-family.js?v=2.16.1"></script>
-  <script defer src="js/era-patches.js?v=2.16.1"></script>
-  <script defer src="js/era-culture.js?v=2.16.1"></script>
-  <script defer src="js/people-timeline.js?v=2.16.1"></script>
-  <script defer src="js/timelines-2.js?v=2.16.1"></script>
-  <script defer src="js/era-batch3.js?v=2.16.1"></script>
-  <script defer src="js/timelines-3.js?v=2.16.1"></script>
-  <script defer src="js/glossary.js?v=2.16.1"></script>
-  <script defer src="js/event-plain.js?v=2.16.1"></script>
-  <script defer src="js/event-plain-2.js?v=2.16.1"></script>
-  <script defer src="js/event-plain-2b.js?v=2.16.1"></script>
-  <script defer src="js/timelines-4.js?v=2.16.1"></script>
-  <script defer src="js/timelines-5.js?v=2.16.1"></script>
-  <script defer src="js/timelines-6.js?v=2.16.1"></script>
-  <script defer src="js/people-extra.js?v=2.16.1"></script>
-  <script defer src="js/era-writers.js?v=2.16.1"></script>
-  <script defer src="js/timelines-7.js?v=2.16.1"></script>
-  <script defer src="js/people-extra-2.js?v=2.16.1"></script>
-  <script defer src="js/era-writers2.js?v=2.16.1"></script>
-  <script defer src="js/timelines-8.js?v=2.16.1"></script>
-  <script defer src="js/people-extra-3.js?v=2.16.1"></script>
-  <script defer src="js/era-sci.js?v=2.16.1"></script>
-  <script defer src="js/era-lit-art.js?v=2.16.1"></script>
-  <script defer src="js/timelines-9.js?v=2.16.1"></script>
-  <script defer src="js/people-extra-4.js?v=2.16.1"></script>
-  <script defer src="js/timelines-10.js?v=2.16.1"></script>
-  <script defer src="js/timelines-11.js?v=2.16.1"></script>
-  <script defer src="js/timelines-12.js?v=2.16.1"></script>
-  <script defer src="js/era-batch4.js?v=2.16.1"></script>
-  <script defer src="js/era-batch5.js?v=2.16.1"></script>
-  <script defer src="js/timelines-13.js?v=2.16.1"></script>
-  <script defer src="js/timelines-13b.js?v=2.16.1"></script>
-  <script defer src="js/timelines-14.js?v=2.16.1"></script>
-  <script defer src="js/timelines-14b.js?v=2.16.1"></script>
-  <script defer src="js/timelines-14c.js?v=2.16.1"></script>
-  <script defer src="js/timelines-14d.js?v=2.16.1"></script>
-  <script defer src="js/timelines-14e.js?v=2.16.1"></script>
-  <script defer src="js/people-extra-5.js?v=2.16.1"></script>
-  <script defer src="js/era-batch6.js?v=2.16.1"></script>
-  <script defer src="js/era-batch7.js?v=2.16.1"></script>
-  <script defer src="js/era-batch8.js?v=2.16.1"></script>
-  <script defer src="js/timelines-15.js?v=2.16.1"></script>
-  <script defer src="js/timelines-15b.js?v=2.16.1"></script>
-  <script defer src="js/timelines-15c.js?v=2.16.1"></script>
-  <script defer src="js/timelines-16.js?v=2.16.1"></script>
-  <script defer src="js/timelines-16b.js?v=2.16.1"></script>
-  <script defer src="js/timelines-16c.js?v=2.16.1"></script>
-  <script defer src="js/timelines-16d.js?v=2.16.1"></script>
-  <script defer src="js/timelines-17.js?v=2.16.1"></script>
-  <script defer src="js/timelines-17b.js?v=2.16.1"></script>
-  <script defer src="js/timelines-17c.js?v=2.16.1"></script>
-  <script defer src="js/timelines-17d.js?v=2.16.1"></script>
-  <script defer src="js/app.js?v=2.16.1"></script>
+  <script defer src="lib/echarts.min.js?v=2.17.0"></script>
+  <script defer src="lib/china.js?v=2.17.0"></script>
+  <script defer src="js/people.js?v=2.17.0"></script>
+  <script defer src="js/events.js?v=2.17.0"></script>
+  <script defer src="js/relations.js?v=2.17.0"></script>
+  <script defer src="js/era-xianqin.js?v=2.17.0"></script>
+  <script defer src="js/era-qinhan.js?v=2.17.0"></script>
+  <script defer src="js/era-suitang.js?v=2.17.0"></script>
+  <script defer src="js/era-songyuan.js?v=2.17.0"></script>
+  <script defer src="js/era-mingqing.js?v=2.17.0"></script>
+  <script defer src="js/era-modern-extra.js?v=2.17.0"></script>
+  <script defer src="js/era-contemporary.js?v=2.17.0"></script>
+  <script defer src="js/era-family.js?v=2.17.0"></script>
+  <script defer src="js/era-patches.js?v=2.17.0"></script>
+  <script defer src="js/era-culture.js?v=2.17.0"></script>
+  <script defer src="js/people-timeline.js?v=2.17.0"></script>
+  <script defer src="js/timelines-2.js?v=2.17.0"></script>
+  <script defer src="js/era-batch3.js?v=2.17.0"></script>
+  <script defer src="js/timelines-3.js?v=2.17.0"></script>
+  <script defer src="js/glossary.js?v=2.17.0"></script>
+  <script defer src="js/event-plain.js?v=2.17.0"></script>
+  <script defer src="js/event-plain-2.js?v=2.17.0"></script>
+  <script defer src="js/event-plain-2b.js?v=2.17.0"></script>
+  <script defer src="js/timelines-4.js?v=2.17.0"></script>
+  <script defer src="js/timelines-5.js?v=2.17.0"></script>
+  <script defer src="js/timelines-6.js?v=2.17.0"></script>
+  <script defer src="js/people-extra.js?v=2.17.0"></script>
+  <script defer src="js/era-writers.js?v=2.17.0"></script>
+  <script defer src="js/timelines-7.js?v=2.17.0"></script>
+  <script defer src="js/people-extra-2.js?v=2.17.0"></script>
+  <script defer src="js/era-writers2.js?v=2.17.0"></script>
+  <script defer src="js/timelines-8.js?v=2.17.0"></script>
+  <script defer src="js/people-extra-3.js?v=2.17.0"></script>
+  <script defer src="js/era-sci.js?v=2.17.0"></script>
+  <script defer src="js/era-lit-art.js?v=2.17.0"></script>
+  <script defer src="js/timelines-9.js?v=2.17.0"></script>
+  <script defer src="js/people-extra-4.js?v=2.17.0"></script>
+  <script defer src="js/timelines-10.js?v=2.17.0"></script>
+  <script defer src="js/timelines-11.js?v=2.17.0"></script>
+  <script defer src="js/timelines-12.js?v=2.17.0"></script>
+  <script defer src="js/era-batch4.js?v=2.17.0"></script>
+  <script defer src="js/era-batch5.js?v=2.17.0"></script>
+  <script defer src="js/timelines-13.js?v=2.17.0"></script>
+  <script defer src="js/timelines-13b.js?v=2.17.0"></script>
+  <script defer src="js/timelines-14.js?v=2.17.0"></script>
+  <script defer src="js/timelines-14b.js?v=2.17.0"></script>
+  <script defer src="js/timelines-14c.js?v=2.17.0"></script>
+  <script defer src="js/timelines-14d.js?v=2.17.0"></script>
+  <script defer src="js/timelines-14e.js?v=2.17.0"></script>
+  <script defer src="js/people-extra-5.js?v=2.17.0"></script>
+  <script defer src="js/era-batch6.js?v=2.17.0"></script>
+  <script defer src="js/era-batch7.js?v=2.17.0"></script>
+  <script defer src="js/era-batch8.js?v=2.17.0"></script>
+  <script defer src="js/timelines-15.js?v=2.17.0"></script>
+  <script defer src="js/timelines-15b.js?v=2.17.0"></script>
+  <script defer src="js/timelines-15c.js?v=2.17.0"></script>
+  <script defer src="js/timelines-16.js?v=2.17.0"></script>
+  <script defer src="js/timelines-16b.js?v=2.17.0"></script>
+  <script defer src="js/timelines-16c.js?v=2.17.0"></script>
+  <script defer src="js/timelines-16d.js?v=2.17.0"></script>
+  <script defer src="js/timelines-17.js?v=2.17.0"></script>
+  <script defer src="js/timelines-17b.js?v=2.17.0"></script>
+  <script defer src="js/timelines-17c.js?v=2.17.0"></script>
+  <script defer src="js/timelines-17d.js?v=2.17.0"></script>
+  <script defer src="js/period-map.js?v=2.17.0"></script>
+  <script defer src="js/app.js?v=2.17.0"></script>
 </body>
 </html>

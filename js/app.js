@@ -32,7 +32,7 @@ const PERIODS = {
   16: { name: "当代中国",         sub: "1949 — 今 · 复兴之路" }
 };
 
-const TABS = ["timeline-section", "graph-section", "people-section"];
+const TABS = ["timeline-section", "graph-section", "people-section", "map-section"];
 const PAGE_SIZE = 60;
 const THEME_KEY = "history-theme";
 
@@ -140,6 +140,10 @@ function switchTab(id, push) {
   if (id === "graph-section") {
     if (!mainChart) initGraph();
     else if (mainChart) mainChart.resize();
+  }
+  if (id === "map-section") {
+    if (!periodMapChart) initPeriodMap();
+    else if (periodMapChart) periodMapChart.resize();
   }
   if (push !== false) try { history.replaceState(null, "", "#" + id); } catch (e) {}
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -993,7 +997,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.16.1", build: 1789171421 };
+const CURRENT_VERSION = { version: "2.17.0", build: 1789171843 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1090,3 +1094,113 @@ checkUpdate(false);   // 静默检查一次，有新版本时按钮自动亮起
   const h = (location.hash || "").replace("#", "");
   if (TABS.indexOf(h) !== -1) switchTab(h, false);
 })();
+
+
+/* ---------- 疆域变迁地图 ---------- */
+let periodMapChart = null;
+let mapCurrentPk = 4;
+
+const MAP_DIM = () => (document.body.classList.contains("light") ? "#e8e2d2" : "#272c38");
+const MAP_DIM_LINE = () => (document.body.classList.contains("light") ? "rgba(90,80,60,.35)" : "rgba(255,255,255,.08)");
+
+function initPeriodMap() {
+  const el = document.getElementById("china-map");
+  if (!el || typeof echarts === "undefined") return;
+  periodMapChart = echarts.init(el);
+  renderMapEras();
+  renderPeriodMap();
+  document.getElementById("map-prev").onclick = () => {
+    mapCurrentPk = mapCurrentPk <= 1 ? 16 : mapCurrentPk - 1;
+    renderPeriodMap(); renderMapEras();
+  };
+  document.getElementById("map-next").onclick = () => {
+    mapCurrentPk = mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1;
+    renderPeriodMap(); renderMapEras();
+  };
+}
+
+function renderMapEras() {
+  const box = document.getElementById("map-eras");
+  if (!box) return;
+  box.innerHTML = Object.keys(PERIODS).map(pk =>
+    `<button class="map-era-btn ${String(pk) === String(mapCurrentPk) ? "active" : ""}" data-pk="${pk}" title="${esc(PERIODS[pk].sub)}">${esc(PERIODS[pk].name)}</button>`
+  ).join("");
+  box.querySelectorAll(".map-era-btn").forEach(b => {
+    b.onclick = () => { mapCurrentPk = +b.dataset.pk; renderPeriodMap(); renderMapEras(); };
+  });
+  const cur = box.querySelector(".map-era-btn.active");
+  if (cur) cur.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+}
+
+function renderPeriodMap() {
+  if (!periodMapChart) return;
+  const cfg = PERIOD_MAPS[mapCurrentPk];
+  const period = PERIODS[mapCurrentPk];
+  const polities = Object.assign({}, cfg.polities || {}, cfg.polities2 || {});
+
+  // 34 省份着色：data 中给出的政权色 / 其余暗色
+  const listed = cfg.areas || {};
+  const data = [];
+  periodMapChart.getOption(); // 确保地图已注册
+  const geoJson = echarts.getMap("china") ? echarts.getMap("china").geoJson : null;
+  const names = geoJson ? geoJson.features.map(f => f.properties.name) : [];
+  names.forEach(n => {
+    const pk = listed[n];
+    if (pk && polities[pk]) {
+      data.push({ name: n, itemStyle: { areaColor: polities[pk].color, borderColor: "rgba(0,0,0,.25)" },
+                  emphasis: { itemStyle: { areaColor: polities[pk].color } },
+                  tooltip: { formatter: `<b>${n}</b> · ${polities[pk].name}` } });
+    } else {
+      data.push({ name: n, itemStyle: { areaColor: MAP_DIM(), borderColor: MAP_DIM_LINE() },
+                  emphasis: { itemStyle: { areaColor: MAP_DIM() } },
+                  tooltip: { formatter: `<b>${n}</b> · 时期内无有效控制` } });
+    }
+  });
+
+  const caps = (cfg.caps || []).map(([name, lng, lat, kind]) => ({
+    name, coord: [lng, lat],
+    symbol: kind === 1 ? "pin" : "circle",
+    symbolSize: kind === 1 ? 34 : 13,
+    itemStyle: { color: kind === 1 ? "#e8c67a" : "#d3a94f", borderColor: "rgba(0,0,0,.4)", borderWidth: 1 },
+    label: { show: true, position: "top", fontSize: 11.5, fontWeight: 700, fontFamily: "serif",
+             color: cssVar("--ink-strong") || "#f2ead4",
+             textBorderColor: cssVar("--graph-node-halo") || "rgba(16,19,25,.9)", textBorderWidth: 2.5,
+             formatter: name }
+  }));
+
+  periodMapChart.setOption({
+    tooltip: {
+      backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
+      borderColor: "rgba(211,169,79,.5)",
+      textStyle: { color: cssVar("--ink") || "#e9e4d6", fontFamily: "serif", fontSize: 13 },
+      confine: true
+    },
+    series: [{
+      type: "map", map: "china", roam: true,
+      zoom: 1.12,
+      aspectScale: .82,
+      label: { show: false },
+      itemStyle: { borderColor: "rgba(0,0,0,.25)", borderWidth: .6 },
+      data,
+      markPoint: {
+        symbol: "pin",
+        data: caps,
+        tooltip: { formatter: p => `<b>${p.name}</b>` }
+      }
+    }]
+  }, true);
+
+  // 信息卡
+  const legendHtml = Object.entries(polities).map(([k, v]) =>
+    `<span class="map-leg"><i style="background:${v.color}"></i>${esc(v.name)}</span>`).join("");
+  document.getElementById("map-info").innerHTML = `
+    <div class="map-info-head">
+      <h3>${esc(period.name)} <span class="map-years">${esc(cfg.years)}</span></h3>
+      <p class="map-desc">${esc(cfg.desc)}</p>
+    </div>
+    <div class="map-legend">${legendHtml}
+      ${cfg.outside ? `<span class="map-leg map-leg-out">↕ 底图之外：${esc(cfg.outside)}</span>` : ""}
+    </div>`;
+}
+
+window.addEventListener("resize", () => periodMapChart && periodMapChart.resize());
