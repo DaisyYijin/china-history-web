@@ -1023,7 +1023,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.22.0", build: 1789532593 };
+const CURRENT_VERSION = { version: "2.22.1", build: 1789532674 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1403,6 +1403,9 @@ function setModalHash(kind, id) {
 })();
 
 function maybeOpenFromHash() {
+  // 直达链接时自动收起开场页，直接看到目标内容
+  const _btn = document.getElementById("intro-enter");
+  if (_btn && !document.getElementById("intro").classList.contains("out")) _btn.click();
   const h = location.hash || "";
   let m = h.match(/^#p\/([a-zA-Z0-9_\-]+)/);
   if (m && PERSON_MAP[m[1]]) { openPerson(m[1]); return; }
