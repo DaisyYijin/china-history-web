@@ -157,16 +157,7 @@ document.addEventListener("click", e => {
 });
 
 /* ---------- 顶部统计 ---------- */
-(function renderStats() {
-  const items = [
-    [EVENTS.length, "重大事件"],
-    [PEOPLE_LIST.length, "关键人物"],
-    [RELATIONS.length, "人物关系"],
-    ["5000", "年文明史"]
-  ];
-  document.getElementById("stats").innerHTML = items.map(([n, label]) =>
-    `<div class="stat"><b>${n}</b><span>${label}</span></div>`).join("");
-})();
+
 
 /* ---------- 大事年表 ---------- */
 let catFilter = "all";
@@ -1023,7 +1014,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.22.1", build: 1789532674 };
+const CURRENT_VERSION = { version: "2.23.0", build: 1789545141 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

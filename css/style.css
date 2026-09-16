@@ -123,7 +123,7 @@ body {
   display: flex; align-items: center; gap: 22px;
 }
 .brand { color: var(--gold); text-decoration: none; font-family: var(--kai); font-size: 17px; letter-spacing: .12em; white-space: nowrap; }
-.nav-links { display: flex; gap: 4px; }
+.nav-links { display: flex; gap: 4px; margin: 0 auto; } /* 居中：品牌居左、控件居右 */
 .nav-links a {
   color: var(--ink); text-decoration: none; font-size: 14.5px;
   padding: 6px 12px; border-radius: 8px; letter-spacing: .08em;
@@ -131,7 +131,7 @@ body {
 .nav-links a:hover { background: rgba(255,255,255,.06); color: var(--gold); }
 
 #search {
-  margin-left: auto;
+  margin-left: 0;
   width: 240px; max-width: 42vw;
   padding: 8px 14px;
   background: var(--panel);
