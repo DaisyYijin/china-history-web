@@ -236,7 +236,23 @@ function renderTimeline() {
     });
     html += `</div></div></div>`;
   });
-  wrap.innerHTML = html;
+  // 搜索/筛选后零结果：给出提示与跨区引导，而不是一片空白
+  if (!html.trim() && (term || catFilter !== "all")) {
+    const peopleHit = term ? PEOPLE_LIST.filter(pp =>
+      personMatch(pp, term)).length : 0;
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <p>${term ? `没有找到与「<b>${esc(term)}</b>」相关的事件` : "该分类下暂无收录事件"}</p>
+        ${term && peopleHit ? `<p class="empty-hint">「人物志」里有 <b>${peopleHit}</b> 位匹配</p>
+          <button class="btn-gold" id="empty-goto-people">去人物志查看 ›</button>` :
+          `<p class="empty-hint">换个关键词试试，例如：赤壁、长征、科举、李白</p>`}
+      </div>`;
+    const gotoBtn = document.getElementById("empty-goto-people");
+    if (gotoBtn) gotoBtn.onclick = () => switchTab("people-section");
+  } else {
+    wrap.innerHTML = html;
+  }
   wrap.classList.toggle("searching", !!term || catFilter !== "all");
   syncToggleAllBtn();
 }
@@ -309,7 +325,9 @@ function renderPeopleGrid() {
       <div class="p-title">${esc(p.title)}</div>
       <span class="p-faction" style="color:${f.color};border-color:${f.color}">${f.name}</span>
     </div>`;
-  }).join("") : `<div class="grid-empty">没有匹配的人物</div>`;
+  }).join("") : `<div class="empty-state"><div class="empty-icon">👤</div>
+       <p>没有匹配的人物</p>
+       <p class="empty-hint">试试全名或称号，例如：李白、岳飞、钱学森</p></div>`;
 
   const pager = document.getElementById("people-pagination");
   if (pages <= 1) { pager.innerHTML = ""; return; }
@@ -1000,7 +1018,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.20.0", build: 1789529367 };
+const CURRENT_VERSION = { version: "2.21.0", build: 1789530735 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

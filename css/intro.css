@@ -227,3 +227,28 @@ body.light .brand { background: linear-gradient(100deg, #a97c2e 20%, #8a6420 50%
   .intro-stats { gap: 14px; }
   .intro-enter { padding: 12px 42px; }
 }
+
+/* 空状态卡片 */
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 56px 20px;
+  text-align: center;
+  color: var(--ink-2);
+  animation: fadeUp .45s both;
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { margin: 4px 0; font-size: 15px; }
+.empty-state b { color: var(--gold); }
+.empty-hint { color: var(--muted); font-size: 13px; }
+.btn-gold {
+  margin-top: 14px;
+  padding: 8px 26px;
+  font-family: inherit; font-size: 13.5px; font-weight: 700;
+  color: #16130b;
+  background: linear-gradient(120deg, #c9973f, #ffe9bd 55%, #c9973f);
+  border: none; border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(211,169,79,.35);
+}
+.btn-gold:hover { transform: translateY(-1px); }
+#timeline .empty-state { margin-top: 20px; }
