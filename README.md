@@ -1,10 +1,10 @@
 # 中国通史 · 大事年表与人物图谱
 
-一个纯静态、开箱即用的**中华通史可视化网站**：从炎黄传说到当代中国，涵盖 **542 位关键人物、227 个重大事件、568 组人物关系**，其中 86 个事件附有**交战双方兵力对比**，174 位主力人物附**逐年生平大事记**（逾千条）。完美适配桌面端与移动端。
+一个纯静态、开箱即用的**中华通史可视化网站**：从炎黄传说到当代中国，涵盖 **700+ 关键人物、220+ 重大事件、750+ 组人物关系**，每人附逐年年谱；新增 **16 时期疆域变迁地图**（战役标注、历史线路、都城定位），其中 86 个事件附有**交战双方兵力对比**，174 位主力人物附**逐年生平大事记**（逾千条）。完美适配桌面端与移动端。
 
 > 在线体验：本地运行后访问 `http://localhost:8080`（Docker）或 `http://localhost:8000`（Python）
 
-![tech](https://img.shields.io/badge/HTML%2FCSS%2FJS-纯静态-blue) ![docker](https://img.shields.io/badge/Docker-nginx%3Aalpine-green) ![size](https://img.shields.io/badge/数据-371%20人物%20%2F%20217%20事件-orange)
+![tech](https://img.shields.io/badge/HTML%2FCSS%2FJS-纯静态-blue) ![docker](https://img.shields.io/badge/Docker-nginx%3Aalpine-green) ![size](https://img.shields.io/badge/数据-701%20人物%20%2F%20227%20事件-orange)
 
 ## 功能特性
 
@@ -97,3 +97,41 @@ docker compose down          # 或 docker rm -f china-history
 ## 内容依据与免责声明
 
 内容依据通行历史教材与公开资料整理；传说时代人物仅具文化意义；古代兵力数字多为史籍记载的通行口径（如"号称百万"），近代战役数字为常见统计口径，仅供参考学习，不作为学术引用依据。
+
+
+## 免费部署（三选一）
+
+本项目为纯静态站点（HTML/CSS/JS），无需构建，任何静态托管均可直接部署。
+
+### 方案一：GitHub Pages（推荐，已配好自动化）
+
+仓库已附带 `.github/workflows/pages.yml` 自动部署工作流，只需开启一次：
+
+1. 打开仓库页面 → **Settings** → 左侧 **Pages**；
+2. **Source** 选择 **GitHub Actions**，保存；
+3. 之后每次 `git push` 到 `main`，站点自动更新。
+
+访问地址：`https://<用户名>.github.io/china-history-web/`
+
+### 方案二：Gitee Pages（国内访问快）
+
+1. 注册/登录 [Gitee](https://gitee.com)（需完成实名认证）；
+2. 新建仓库 → 选择 **导入已有仓库**，填入
+   `https://github.com/DaisyYijin/china-history-web.git`；
+3. 仓库 → **服务** → **Gitee Pages** → 部署分支选 `main`、目录 `/`，启动；
+4. 每次更新需在 Gitee 仓库手动点一次「同步」再重新部署（Gitee 免费版限制）。
+
+访问地址：`https://<用户名>.gitee.io/china-history-web/`
+
+> 注意：Gitee Pages 需实名认证且内容需通过审核；站点含历史地图示意内容，建议部署说明中注明「历史教学示意用途」。
+
+### 方案三：Vercel / Netlify（海外）
+
+- [Vercel](https://vercel.com)：Add New Project → 导入 GitHub 仓库 → Framework 选 **Other** → Deploy，零配置；
+- [Netlify](https://netlify.com)：同理，构建命令留空、发布目录 `.`。
+
+### 自托管（已有配置）
+
+```bash
+docker compose up -d   # http://localhost:8080
+```

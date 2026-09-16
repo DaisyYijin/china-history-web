@@ -1000,7 +1000,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.18.0", build: 1789526131 };
+const CURRENT_VERSION = { version: "2.19.0", build: 1789526612 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1263,3 +1263,98 @@ function renderPeriodMap() {
 }
 
 window.addEventListener("resize", () => periodMapChart && periodMapChart.resize());
+
+
+/* ---------- 星空粒子背景 ---------- */
+(function initStars() {
+  const cv = document.getElementById("stars");
+  if (!cv) return;
+  const ctx = cv.getContext("2d");
+  let W, H, stars = [], running = true;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function resize() {
+    W = cv.width = window.innerWidth;
+    H = cv.height = window.innerHeight;
+    const n = Math.min(170, Math.round(W * H / 12000));
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: Math.random() * 1.4 + .3,
+      vx: (Math.random() - .5) * .12, vy: (Math.random() - .5) * .1,
+      a: Math.random() * .6 + .15, tw: Math.random() * Math.PI * 2,
+      gold: Math.random() < .3
+    }));
+  }
+  function tick() {
+    if (!running) return;
+    ctx.clearRect(0, 0, W, H);
+    for (const st of stars) {
+      st.x += st.vx; st.y += st.vy; st.tw += .02;
+      if (st.x < 0) st.x = W; if (st.x > W) st.x = 0;
+      if (st.y < 0) st.y = H; if (st.y > H) st.y = 0;
+      const alpha = st.a * (0.6 + 0.4 * Math.sin(st.tw));
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fillStyle = st.gold ? `rgba(220,180,105,${alpha})` : `rgba(200,210,235,${alpha * .8})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+  window.addEventListener("resize", resize);
+  document.addEventListener("visibilitychange", () => {
+    running = !document.hidden && !reduce;
+    if (running) requestAnimationFrame(tick);
+  });
+  resize();
+  if (!reduce) requestAnimationFrame(tick);
+  else { ctx.clearRect(0, 0, W, H); for (const st of stars) { ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, Math.PI*2); ctx.fillStyle = st.gold ? "rgba(220,180,105,.5)" : "rgba(200,210,235,.35)"; ctx.fill(); } }
+})();
+
+/* ---------- 开场主页 ---------- */
+(function initIntro() {
+  const intro = document.getElementById("intro");
+  if (!intro) return;
+
+  // 朝代流转条（两份拼接实现无缝滚动）
+  const dyn = "夏 商 西周 东周 春秋 战国 秦 西汉 东汉 三国 西晋 东晋 南北朝 隋 唐 五代 宋 辽金 元 明 清 民国 共和国".split(" ");
+  const track = document.getElementById("intro-dynasties");
+  const half = dyn.map(d => `<b>${d}</b>`).join("") + dyn.map(d => `<b>${d}</b>`).join("");
+  track.innerHTML = half;
+
+  // 名言打字机
+  const quote = "以铜为镜，可以正衣冠；以史为镜，可以知兴替。";
+  const qEl = document.getElementById("intro-quote");
+  let qi = 0;
+  const timer = setInterval(() => {
+    qEl.textContent = quote.slice(0, ++qi);
+    if (qi >= quote.length) clearInterval(timer);
+  }, 90);
+
+  // 数据计数
+  const counters = [
+    ["stat-p", Object.keys(PEOPLE).length],
+    ["stat-e", EVENTS.length],
+    ["stat-r", RELATIONS.length]
+  ];
+  counters.forEach(([id, target]) => {
+    const el = document.getElementById(id);
+    const t0 = performance.now(), dur = 1400;
+    (function step(t) {
+      const k = Math.min(1, (t - t0) / dur);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  });
+
+  function enter() {
+    if (intro.classList.contains("out")) return;
+    clearInterval(timer);
+    intro.classList.add("out");
+    setTimeout(() => intro.remove(), 950);
+    try { document.getElementById("search-input") && document.getElementById("search-input").blur(); } catch (e) {}
+  }
+  document.getElementById("intro-enter").onclick = enter;
+  window.addEventListener("keydown", e => {
+    if (!intro.classList.contains("out") && (e.key === "Enter" || e.key === " ")) enter();
+  });
+})();
