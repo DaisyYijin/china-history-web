@@ -117,12 +117,21 @@ docker compose down          # 或 docker rm -f china-history
 
 ### 方案二（国内）：Gitee Pages
 
+**方式 A · 控制台导入（最简单，无需配钥匙）**
+
 1. [gitee.com](https://gitee.com) 注册并完成**实名认证**；
-2. 新建仓库 → **导入已有仓库** → 填 `https://github.com/DaisyYijin/china-history-web.git`；
+2. 新建仓库 → **导入已有仓库** → 填 `https://github.com/DaisyYijin/china-history-web.git`（需 GitHub 仓库为公开）；
 3. 仓库 → 服务 → **Gitee Pages** → 部署分支 `main`、目录 `/` → 启动；
 4. 访问 `https://<用户名>.gitee.io/china-history-web/`。
 
-> 注意：Gitee Pages 需实名＋内容审核（含历史地图内容建议备注「历史教学示意用途」）；每次更新需手动同步仓库并重新部署。
+**方式 B · 本地直推（仓库私有也能用，更新方便）**
+
+```bash
+# 一次性：Gitee → 设置 → SSH公钥 → 粘贴 ~/.ssh/id_ed25519.pub 内容
+bash scripts/deploy-gitee.sh <你的Gitee用户名>
+```
+
+> 注意：Gitee Pages 免费版需实名认证且内容需通过审核（含历史地图内容建议在仓库简介备注「历史教学示意用途」）；每次更新代码后需到 服务 → Gitee Pages 手动点「更新」重新部署。
 
 ### 方案三（国内、近零成本）：对象存储静态托管
 
