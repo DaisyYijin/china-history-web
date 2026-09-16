@@ -112,12 +112,12 @@ function periodOf(ev) {
 
 /* ---------- 主题切换 ---------- */
 function currentTheme() {
-  try { return localStorage.getItem(THEME_KEY) || "dark"; } catch (e) { return "dark"; }
+  try { return localStorage.getItem(THEME_KEY) || "light"; } catch (e) { return "light"; }
 }
 function applyTheme(t, rebuild) {
   document.body.classList.toggle("light", t === "light");
   const btn = document.getElementById("theme-toggle");
-  if (btn) btn.textContent = t === "light" ? "☀️" : "🌙";
+  if (btn) { btn.textContent = t === "light" ? "☀️" : "🌙"; btn.setAttribute("aria-pressed", t === "dark"); }
   if (rebuild) {
     if (mainChart) applyGraphFilter();
     if (miniPersonId) renderMiniGraph(miniPersonId, FACTIONS[PERSON_MAP[miniPersonId].faction].color);
@@ -1000,7 +1000,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.19.0", build: 1789526612 };
+const CURRENT_VERSION = { version: "2.20.0", build: 1789529367 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1293,9 +1293,13 @@ window.addEventListener("resize", () => periodMapChart && periodMapChart.resize(
       if (st.x < 0) st.x = W; if (st.x > W) st.x = 0;
       if (st.y < 0) st.y = H; if (st.y > H) st.y = 0;
       const alpha = st.a * (0.6 + 0.4 * Math.sin(st.tw));
+      const light = document.body.classList.contains("light");
       ctx.beginPath();
       ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
-      ctx.fillStyle = st.gold ? `rgba(220,180,105,${alpha})` : `rgba(200,210,235,${alpha * .8})`;
+      // 亮色宣纸底上只留极淡金尘，避免蓝白噪点弄脏底色
+      ctx.fillStyle = light
+        ? `rgba(190,150,80,${alpha * .5})`
+        : (st.gold ? `rgba(220,180,105,${alpha})` : `rgba(200,210,235,${alpha * .8})`);
       ctx.fill();
     }
     requestAnimationFrame(tick);

@@ -9,7 +9,7 @@
   z-index: 0; pointer-events: none;
   opacity: .55;
 }
-body.light #stars { opacity: .3; }
+body.light #stars { opacity: .16; }
 main, header, footer, #side-menu, #back-top, #modal-wrap { position: relative; z-index: 1; }
 
 /* ---------- 开场主页 ---------- */
@@ -66,6 +66,7 @@ main, header, footer, #side-menu, #back-top, #modal-wrap { position: relative; z
   text-shadow: 0 0 60px rgba(211,169,79,.25);
 }
 @keyframes shimmer { to { background-position: -220% 0; } }
+body.light .brand { background: linear-gradient(100deg, #a97c2e 20%, #8a6420 50%, #a97c2e 80%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; }
 @keyframes titleIn { from { opacity: 0; letter-spacing: .5em; filter: blur(6px); } to { opacity: 1; letter-spacing: .18em; filter: blur(0); } }
 
 .intro-sub {
