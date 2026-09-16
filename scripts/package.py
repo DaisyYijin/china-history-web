@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "dist.zip")
 
 INCLUDE_DIRS = ["css", "js", "lib"]
-INCLUDE_FILES = ["index.html", "version.json"]
+INCLUDE_FILES = ["index.html", "version.json", "sw.js", "manifest.webmanifest", "icon.svg"]
 EXCLUDE_JS_PREFIXES = ("_",)  # 临时校验文件
 
 def main():

@@ -1,0 +1,11 @@
+{
+  "name": "史鉴 · 华夏五千年",
+  "short_name": "史鉴",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4ecd9",
+  "theme_color": "#b0893a",
+  "description": "中国通史可视化：大事年表、人物图谱、疆域变迁",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose":"any" }]
+}

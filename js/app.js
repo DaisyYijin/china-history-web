@@ -204,7 +204,8 @@ function renderTimeline() {
     if (!list.length) return;
     const shown = list.filter(ev =>
       (catFilter === "all" || ev.category === catFilter) &&
-      (!term || evMatch(ev, term)));
+      (!term || evMatch(ev, term)) &&
+      (!yearFocus || Math.abs(ev.year - yearFocus) <= 30));
     if (!shown.length) return;   // 该时期无匹配事件时整个时期不显示
     html += `<div class="era ${openEras.has(pk) ? "open" : ""}" data-era="${pk}">
       <div class="era-head">
@@ -216,7 +217,8 @@ function renderTimeline() {
     list.forEach(ev => {
       const cat = CATS[ev.category];
       const matched = (catFilter === "all" || ev.category === catFilter) &&
-        (!term || evMatch(ev, term));
+        (!term || evMatch(ev, term)) &&
+        (!yearFocus || Math.abs(ev.year - yearFocus) <= 30);
       const forceLine = ev.forces ? `<div class="force-line">${ev.forces.map(f =>
         `<b>${esc(f.side)}</b>：${esc(f.troops)}`).join(" ｜ ")}</div>` : "";
       html += `<div class="t-item ${matched ? "" : "hidden-by-filter"}" data-ev="${ev.id}">
@@ -237,13 +239,13 @@ function renderTimeline() {
     html += `</div></div></div>`;
   });
   // 搜索/筛选后零结果：给出提示与跨区引导，而不是一片空白
-  if (!html.trim() && (term || catFilter !== "all")) {
+  if (!html.trim() && (term || catFilter !== "all" || yearFocus !== null)) {
     const peopleHit = term ? PEOPLE_LIST.filter(pp =>
       personMatch(pp, term)).length : 0;
     wrap.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
-        <p>${term ? `没有找到与「<b>${esc(term)}</b>」相关的事件` : "该分类下暂无收录事件"}</p>
+        <p>${yearFocus !== null && !term ? `${fmtYear(yearFocus)} 前后 60 年内暂无收录事件` : (term ? `没有找到与「<b>${esc(term)}</b>」相关的事件` : "该分类下暂无收录事件")}</p>
         ${term && peopleHit ? `<p class="empty-hint">「人物志」里有 <b>${peopleHit}</b> 位匹配</p>
           <button class="btn-gold" id="empty-goto-people">去人物志查看 ›</button>` :
           `<p class="empty-hint">换个关键词试试，例如：赤壁、长征、科举、李白</p>`}
@@ -253,7 +255,7 @@ function renderTimeline() {
   } else {
     wrap.innerHTML = html;
   }
-  wrap.classList.toggle("searching", !!term || catFilter !== "all");
+  wrap.classList.toggle("searching", !!term || catFilter !== "all" || yearFocus !== null);
   syncToggleAllBtn();
 }
 
@@ -362,6 +364,7 @@ document.getElementById("search").addEventListener("input", () => {
     peoplePage = 1;
     renderTimeline();
     renderPeopleGrid();
+    syncGraphSearch(getTerm());
   }, 150);
 });
 
@@ -427,6 +430,7 @@ function openRelation(aId, bId, t) {
 function openEvent(id) {
   const ev = EVENT_MAP[id];
   if (!ev) return;
+  setModalHash("e", id);
   const cat = CATS[ev.category];
   const period = PERIODS[periodOf(ev)];
 
@@ -481,6 +485,7 @@ function openEvent(id) {
 function openPerson(id) {
   const p = PERSON_MAP[id];
   if (!p) return;
+  setModalHash("p", id);
   const f = FACTIONS[p.faction];
 
   const evChips = (p.events || []).map(eid => {
@@ -1018,7 +1023,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.21.1", build: 1789532108 };
+const CURRENT_VERSION = { version: "2.22.0", build: 1789532593 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1380,3 +1385,77 @@ window.addEventListener("resize", () => periodMapChart && periodMapChart.resize(
     if (!intro.classList.contains("out") && (e.key === "Enter" || e.key === " ")) enter();
   });
 })();
+
+/* ---------- 功能模块：直达链接 / 图谱搜索联动 / 时间轴滑杆 / PWA ---------- */
+var preModalHash = null;
+
+function setModalHash(kind, id) {
+  if (location.hash === "#" + kind + "/" + id) return;
+  if (!/^#(p|e)\//.test(location.hash || "")) preModalHash = location.hash || "#timeline-section";
+  try { history.replaceState(null, "", "#" + kind + "/" + id); } catch (e) {}
+}
+(function () {
+  const _close = closeModal;
+  closeModal = function () {
+    _close();
+    if (preModalHash) { try { history.replaceState(null, "", preModalHash); } catch (e) {} }
+  };
+})();
+
+function maybeOpenFromHash() {
+  const h = location.hash || "";
+  let m = h.match(/^#p\/([a-zA-Z0-9_\-]+)/);
+  if (m && PERSON_MAP[m[1]]) { openPerson(m[1]); return; }
+  m = h.match(/^#e\/([a-zA-Z0-9_\-]+)/);
+  if (m && EVENT_MAP[m[1]]) { openEvent(m[1]); return; }
+}
+window.addEventListener("hashchange", maybeOpenFromHash);
+setTimeout(maybeOpenFromHash, 2500); // 开场页 2.5s 内直达链接也可自动打开
+
+/* 图谱搜索联动：高亮匹配节点（少量时），不触碰 series.data 以免重启力导向 */
+let gHighlightNames = [];
+function syncGraphSearch(term) {
+  if (!mainChart) return;
+  try {
+    if (gHighlightNames.length) {
+      gHighlightNames.forEach(n => mainChart.dispatchAction({ type: "downplay", seriesIndex: 0, name: n }));
+      gHighlightNames = [];
+    }
+    if (!term) return;
+    const hits = PEOPLE_LIST.filter(pp => personMatch(pp, term)).map(pp => pp.name);
+    if (!hits.length) return;
+    if (hits.length > 12) return; // 命中过多不高亮，避免满屏 emphasis
+    gHighlightNames = hits;
+    hits.forEach(n => mainChart.dispatchAction({ type: "highlight", seriesIndex: 0, name: n }));
+  } catch (e) { /* 图谱未就绪时忽略 */ }
+}
+
+/* 时间轴年份滑杆 */
+var yearFocus = null;
+function fmtYear(y) { return y < 0 ? "前" + (-y) + "年" : y + "年"; }
+(function () {
+  const slider = document.getElementById("tl-slider");
+  const label = document.getElementById("tl-year-label");
+  const clearBtn = document.getElementById("tl-clear");
+  if (!slider) return;
+  slider.addEventListener("input", () => {
+    yearFocus = +slider.value;
+    label.textContent = fmtYear(yearFocus) + " ±30年";
+    label.classList.add("on");
+    clearTimeout(slider._t);
+    slider._t = setTimeout(renderTimeline, 120);
+  });
+  clearBtn.onclick = () => {
+    yearFocus = null;
+    slider.value = 0;
+    label.textContent = "拖动选年";
+    label.classList.remove("on");
+    renderTimeline();
+  };
+})();
+
+/* PWA：Service Worker 注册（localhost / https 下生效） */
+if ("serviceWorker" in navigator &&
+    (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}

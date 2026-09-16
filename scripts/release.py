@@ -31,6 +31,14 @@ def main():
     build = int(time.time())
     do_commit = "--commit" in sys.argv
 
+    # 0. sw.js 缓存版本号
+    swpath = ROOT / "sw.js"
+    if swpath.exists():
+        sw = swpath.read_text(encoding="utf-8")
+        import re as _re
+        sw = _re.sub(r'const BUILD = "[^"]*";', f'const BUILD = "{build}";', sw)
+        swpath.write_text(sw, encoding="utf-8")
+
     # 1. version.json
     vpath = ROOT / "version.json"
     vpath.write_text(json.dumps(
