@@ -99,36 +99,43 @@ docker compose down          # 或 docker rm -f china-history
 内容依据通行历史教材与公开资料整理；传说时代人物仅具文化意义；古代兵力数字多为史籍记载的通行口径（如"号称百万"），近代战役数字为常见统计口径，仅供参考学习，不作为学术引用依据。
 
 
-## 免费部署（三选一）
+## 免费部署
 
-本项目为纯静态站点（HTML/CSS/JS），无需构建，任何静态托管均可直接部署。
+本项目为纯静态站点（HTML/CSS/JS），无需构建，任何静态托管均可直接部署。**国内访问优先选前三家**。
 
-### 方案一：GitHub Pages（推荐，已配好自动化）
+> 一键打包上传：`python scripts/package.py` 生成 `dist.zip`，可直接上传到下述任一控制台。
 
-仓库已附带 `.github/workflows/pages.yml` 自动部署工作流，只需开启一次：
+### 方案一（国内推荐）：腾讯 EdgeOne Pages
 
-1. 打开仓库页面 → **Settings** → 左侧 **Pages**；
-2. **Source** 选择 **GitHub Actions**，保存；
-3. 之后每次 `git push` 到 `main`，站点自动更新。
+免费额度大、境内 CDN 节点直连、默认域名无需备案：
 
-访问地址：`https://<用户名>.github.io/china-history-web/`
+1. 打开 [edgeone.cloud.tencent.com/pages](https://edgeone.cloud.tencent.com/pages)，注册/登录腾讯云账号（需实名认证）；
+2. 创建项目两种方式任选：
+   - **导入 Git 仓库**（支持 GitHub/GitLab 等源）→ 选 `DaisyYijin/china-history-web`，分支 `main`，构建命令留空、输出目录 `/`；
+   - **直接上传**：项目 → 「上传部署」→ 选 `dist.zip`；
+3. 部署完成即得 `https://xxx.edgeone.app` 域名；之后每次推送代码或重新上传 ZIP 自动更新（导入方式）。
 
-### 方案二：Gitee Pages（国内访问快）
+### 方案二（国内）：Gitee Pages
 
-1. 注册/登录 [Gitee](https://gitee.com)（需完成实名认证）；
-2. 新建仓库 → 选择 **导入已有仓库**，填入
-   `https://github.com/DaisyYijin/china-history-web.git`；
-3. 仓库 → **服务** → **Gitee Pages** → 部署分支选 `main`、目录 `/`，启动；
-4. 每次更新需在 Gitee 仓库手动点一次「同步」再重新部署（Gitee 免费版限制）。
+1. [gitee.com](https://gitee.com) 注册并完成**实名认证**；
+2. 新建仓库 → **导入已有仓库** → 填 `https://github.com/DaisyYijin/china-history-web.git`；
+3. 仓库 → 服务 → **Gitee Pages** → 部署分支 `main`、目录 `/` → 启动；
+4. 访问 `https://<用户名>.gitee.io/china-history-web/`。
 
-访问地址：`https://<用户名>.gitee.io/china-history-web/`
+> 注意：Gitee Pages 需实名＋内容审核（含历史地图内容建议备注「历史教学示意用途」）；每次更新需手动同步仓库并重新部署。
 
-> 注意：Gitee Pages 需实名认证且内容需通过审核；站点含历史地图示意内容，建议部署说明中注明「历史教学示意用途」。
+### 方案三（国内、近零成本）：对象存储静态托管
 
-### 方案三：Vercel / Netlify（海外）
+阿里云 OSS / 腾讯云 COS 均可，默认外网域名**免备案**直接可访问：
 
-- [Vercel](https://vercel.com)：Add New Project → 导入 GitHub 仓库 → Framework 选 **Other** → Deploy，零配置；
-- [Netlify](https://netlify.com)：同理，构建命令留空、发布目录 `.`。
+1. 控制台创建 Bucket（地域选离你最近的城市），权限「公共读」；
+2. 开启「静态网站托管」，默认首页 `index.html`；
+3. 上传 `dist.zip` 解压（或用 ossutil / coscli 同步 `css/ js/ lib/ index.html version.json`）；
+4. 访问 Bucket 的默认网站域名即可；流量极小则月成本几分钱。
+
+### 方案四（海外备选）：GitHub Pages
+
+仓库已附带 `.github/workflows/pages.yml` 自动部署：Settings → Pages → Source 选 **GitHub Actions**，之后 push 即自动发布到 `https://<用户名>.github.io/china-history-web/`（Vercel/Netlify 同理，零配置）。
 
 ### 自托管（已有配置）
 
