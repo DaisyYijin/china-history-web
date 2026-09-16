@@ -1000,7 +1000,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.17.1", build: 1789172518 };
+const CURRENT_VERSION = { version: "2.18.0", build: 1789526131 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1112,6 +1112,10 @@ function initPeriodMap() {
   periodMapChart = echarts.init(el);
   renderMapEras();
   renderPeriodMap();
+  periodMapChart.on("click", p => {
+    if (p.seriesType === "effectScatter" && p.data && p.data.eid) openEvent(p.data.eid);
+  });
+  document.getElementById("toggle-map-battles").onchange = () => renderPeriodMap();
   document.getElementById("map-prev").onclick = () => {
     mapCurrentPk = mapCurrentPk <= 1 ? 16 : mapCurrentPk - 1;
     renderPeriodMap(); renderMapEras();
@@ -1156,6 +1160,15 @@ function renderPeriodMap() {
           emphasis: { itemStyle: { areaColor: MAP_DIM() } } };
   });
 
+  const showBattles = document.getElementById("toggle-map-battles").checked;
+  const battleEvents = typeof BATTLE_COORDS !== "undefined"
+    ? EVENTS.filter(ev => ev.category === "war"
+        && (ev.p || periodOf(ev)) === mapCurrentPk
+        && BATTLE_COORDS[ev.id])
+    : [];
+  const routes = typeof PERIOD_ROUTES !== "undefined" && PERIOD_ROUTES[mapCurrentPk]
+    ? PERIOD_ROUTES[mapCurrentPk] : [];
+
   const caps = (cfg.caps || []).map(([name, lng, lat, kind]) => ({
     name, value: [lng, lat],
     symbol: kind === 1 ? "pin" : "circle",
@@ -1175,6 +1188,8 @@ function renderPeriodMap() {
       confine: true,
       formatter: p => {
         if (p.seriesType === "map") return `<b>${p.name}</b>${p.data.pol ? " · " + p.data.pol : " · 时期内无有效控制"}`;
+        if (p.seriesType === "effectScatter") return `<b style="color:#ff9d8a">${esc(String(p.data.year))}</b> · <b>${p.name}</b><br><span style="color:#9aa2b1">点击查看战役详情</span>`;
+        if (p.seriesType === "lines") return `<b>${p.name}</b>`;
         return `<b>${p.name}</b>`;
       }
     },
@@ -1188,6 +1203,27 @@ function renderPeriodMap() {
       { type: "map", map: "china", geoIndex: 0, data },
       { type: "scatter", coordinateSystem: "geo", data: caps,
         zlevel: 2, silent: false },
+      ...(showBattles ? [{
+        type: "effectScatter", coordinateSystem: "geo", zlevel: 4,
+        rippleEffect: { brushType: "stroke", scale: 3.2 },
+        symbolSize: 11,
+        itemStyle: { color: "#e05545", shadowBlur: 8, shadowColor: "rgba(224,85,69,.8)" },
+        label: { show: false },
+        data: battleEvents.map(ev => ({
+          name: ev.title, value: BATTLE_COORDS[ev.id], eid: ev.id, year: ev.year,
+          label: { show: true, position: "right", fontSize: 11, fontWeight: 700, fontFamily: "serif",
+                   color: "#ffd9c9",
+                   textBorderColor: "rgba(16,19,25,.9)", textBorderWidth: 2.5,
+                   formatter: ev.title.length > 12 ? ev.title.slice(0, 11) + "…" : ev.title }
+        }))
+      }] : []),
+      ...(routes.length ? [{
+        type: "lines", coordinateSystem: "geo", zlevel: 3, polyline: true, silent: true,
+        lineStyle: { opacity: .8 },
+        data: routes.map(r => ({ name: r.name,
+          coords: r.coords,
+          lineStyle: { color: r.color, width: 3, type: r.dash ? "dashed" : "solid", opacity: .75 } }))
+      }] : []),
       ...(cfg.bounds && cfg.bounds.length ? [{
         type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
         data: cfg.bounds.map(b => ({ name: b.name, pts: b.pts, pol: b.pol, lost: b.lost })),
@@ -1210,6 +1246,10 @@ function renderPeriodMap() {
 
   const legendHtml = Object.entries(polities).map(([k, v]) =>
     `<span class="map-leg"><i style="background:${v.color}"></i>${esc(v.name)}</span>`).join("");
+  const battleHtml = battleEvents.length
+    ? `<span class="map-leg"><i style="background:#e05545;border-radius:50%"></i>本时期战役 ${battleEvents.length} 场（点击标记查看详情）</span>` : "";
+  const routeHtml = routes.map(r =>
+    `<span class="map-leg"><i style="background:${r.color};height:4px;border-radius:2px;${r.dash ? "opacity:.85;" : ""}"></i>${esc(r.name)}</span>`).join("");
   const boundsHtml = (cfg.bounds || []).map(b =>
     `<span class="map-leg"><i style="background:${b.lost ? "rgba(150,40,40,.35)" : (polities[b.pol] ? polities[b.pol].color : "#b0553c")};opacity:.75;${b.lost ? "border:1.5px dashed #c05050;" : ""}"></i>${esc(b.name)}</span>`).join("");
   document.getElementById("map-info").innerHTML = `
@@ -1217,7 +1257,7 @@ function renderPeriodMap() {
       <h3>${esc(period.name)} <span class="map-years">${esc(cfg.years)}</span></h3>
       <p class="map-desc">${esc(cfg.desc)}</p>
     </div>
-    <div class="map-legend">${legendHtml}${boundsHtml}
+    <div class="map-legend">${legendHtml}${routeHtml}${boundsHtml}${battleHtml}
       ${cfg.outside ? `<span class="map-leg map-leg-out">↕ 底图之外：${esc(cfg.outside)}</span>` : ""}
     </div>`;
 }
