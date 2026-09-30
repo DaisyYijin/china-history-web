@@ -288,9 +288,6 @@ rt {
   user-select: none;
 }
 ruby { ruby-align: center; }
-.pinyin-on .t-snippet, .pinyin-on .m-desc, .pinyin-on .life-text,
-.pinyin-on .map-desc, .pinyin-on .quote-ctx, .pinyin-on .vita-row span { line-height: 2.5; }
-.pinyin-on .t-item { line-height: 1.9; }
 #pinyin-toggle { font-weight: 700; font-size: 13px; }
 #pinyin-toggle.active {
   background: linear-gradient(120deg, #c9973f, #ffe9bd);
@@ -298,3 +295,18 @@ ruby { ruby-align: center; }
   border-color: var(--gold);
 }
 body.light #pinyin-toggle.active { color: #16130b; }
+
+/* 生僻字括号内联注音 */
+.pyz em {
+  font-style: normal;
+  font-size: .82em;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+/* 生僻字括号内联注音 */
+.pyz em {
+  font-style: normal;
+  font-size: .82em;
+  color: var(--muted);
+}
