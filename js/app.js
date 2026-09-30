@@ -1036,7 +1036,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.27.1", build: 1790733645 };
+const CURRENT_VERSION = { version: "2.27.2", build: 1790734258 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1118,7 +1118,8 @@ document.getElementById("guide-btn").onclick = () => {
    只碰 TextNode，任何 HTML 标签（含术语标注 span）不受影响。 */
 var PINYIN_KEY = "pinyin-on";
 function pinyinEnabled() {
-  try { return localStorage.getItem(PINYIN_KEY) !== "off"; } catch (e) { return true; }
+  /* 默认关闭：成年阅读为主；需要儿童阅读时点导航「拼」开启并记忆 */
+  try { return localStorage.getItem(PINYIN_KEY) === "on"; } catch (e) { return false; }
 }
 var _pyCache = new Map();
 function _segHtml(seg) {
