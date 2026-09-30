@@ -1,0 +1,114 @@
+/* =========================================================
+ * UI 打磨包 v2.31（对应代码内功能点见 app.js 同批修改）
+ * ========================================================= */
+
+/* ---------- 1. 事件卡片重排：日期徽章行 + 底部元信息 ---------- */
+.t-item { position: relative; }
+
+/* ---------- 2. 人物卡片：阵营渐变边 + 悬停展开生平首句 ---------- */
+.p-card { overflow: hidden; position: relative; }
+.p-card::before {
+  content: "";
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--pc, var(--gold));
+  opacity: .85;
+}
+.p-card .p-life { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+
+/* ---------- 3. 弹窗目录导航（右侧吸顶小圆点目录） ---------- */
+.m-toc {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 0 8px;
+  margin: -6px 0 6px;
+  background: linear-gradient(180deg, var(--panel) 82%, transparent);
+}
+.m-toc a {
+  font-size: 12.5px; text-decoration: none;
+  color: var(--ink-2);
+  padding: 4px 12px;
+  border: 1px solid rgba(128,128,128,.25);
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.m-toc a:hover, .m-toc a.active {
+  color: #16130b;
+  background: linear-gradient(120deg, #c9973f, #ffe9bd);
+  border-color: var(--gold);
+  font-weight: 700;
+}
+
+/* ---------- 4. 图谱/地图加载占位 ---------- */
+.chart-loading {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px;
+  color: var(--muted); font-size: 13.5px; letter-spacing: .1em;
+  background: var(--panel-2);
+  z-index: 3;
+}
+.chart-loading .ring {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: 3px solid rgba(211,169,79,.2);
+  border-top-color: var(--gold);
+  animation: spin 1s linear infinite;
+}
+#graph-wrap, #china-map { position: relative; }
+
+/* ---------- 5. 搜索框聚焦金色光晕 ---------- */
+#search:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(211,169,79,.18);
+}
+
+/* ---------- 6. 页脚微调 ---------- */
+footer .update-btn { letter-spacing: .06em; }
+
+/* ---------- 7. 回到顶部：滚动进度环 ---------- */
+#back-top { position: fixed; }
+#back-top .progress {
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(var(--gold) calc(var(--sp, 0) * 1%), rgba(128,128,128,.15) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  z-index: -1;
+}
+
+/* ---------- 8. 移动端底部标签栏 ---------- */
+#tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: none;
+  background: var(--nav-bg);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+#tabbar a {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 11px; text-decoration: none; color: var(--ink-2);
+  letter-spacing: .04em;
+}
+#tabbar a i { font-size: 19px; font-style: normal; }
+#tabbar a.active { color: var(--gold); font-weight: 700; }
+@media (max-width: 720px) {
+  #tabbar { display: flex; }
+  footer { padding-bottom: 76px; }
+  #back-top { bottom: 84px; }
+}
+
+/* ---------- 9. 事件分类色条（卡片左侧） ---------- */
+.t-item::before {
+  content: "";
+  position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
+  border-radius: 2px;
+  background: var(--cat, transparent);
+  opacity: .9;
+}
+
+/* ---------- 10. 亮色微调 ---------- */
+body.light .m-toc { background: linear-gradient(180deg, var(--panel) 82%, transparent); }

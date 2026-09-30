@@ -135,7 +135,7 @@ function switchTab(id, push) {
     const el = document.getElementById(s);
     if (el) el.classList.toggle("tab-active", s === id);
   });
-  document.querySelectorAll(".tab-link, .side-link").forEach(a =>
+  document.querySelectorAll(".tab-link, .side-link, #tabbar a").forEach(a =>
     a.classList.toggle("active", a.dataset.tabLink === id));
   if (id === "graph-section") {
     if (!mainChart) initGraph();
@@ -212,7 +212,7 @@ function renderTimeline() {
         (!yearFocus || Math.abs(ev.year - yearFocus) <= 30);
       const forceLine = ev.forces ? `<div class="force-line">${ev.forces.map(f =>
         `<b>${esc(f.side)}</b>：${esc(f.troops)}`).join(" ｜ ")}</div>` : "";
-      html += `<div class="t-item ${matched ? "" : "hidden-by-filter"}" data-ev="${ev.id}">
+      html += `<div class="t-item ${matched ? "" : "hidden-by-filter"}" data-ev="${ev.id}" style="--cat:${cat.color}">
         <span class="dot" style="background:${cat.color}"></span>
         <div class="t-card" data-open-event="${ev.id}">
           <div class="t-top">
@@ -312,7 +312,7 @@ function renderPeopleGrid() {
 
   grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
-    return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}">
+    return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}" style="--pc:${f.color}">
       <div class="avatar" style="color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
       <div class="p-name">${esc(p.name)}</div>
       <div class="p-life">${esc(p.life)}</div>
@@ -417,6 +417,7 @@ function openRelation(aId, bId, t) {
       <button class="chip" data-open-person="${aId}">查看 ${esc(A.name)} 详情</button>
       <button class="chip" data-open-person="${bId}">查看 ${esc(B.name)} 详情</button>
     </div>`;
+  injectModalToc();
   openModal();
   modalBody.scrollTop = 0;
 }
@@ -474,6 +475,23 @@ function openEvent(id) {
     ${peopleHtml}`;
   openModal();
   modalBody.scrollTop = 0;
+}
+
+/* 弹窗目录：按已渲染的区块标题生成锚点胶囊，点击平滑滚动 */
+function injectModalToc() {
+  const heads = [...modalBody.querySelectorAll(".m-h4")];
+  if (heads.length < 3) return;
+  const nav = document.createElement("nav");
+  nav.className = "m-toc";
+  heads.forEach((h, i) => {
+    if (!h.id) h.id = "msec-" + i;
+    const a = document.createElement("a");
+    a.href = "#" + h.id;
+    a.textContent = h.textContent.replace(/^[^一-龥A-Za-z]+/, "");
+    a.onclick = e => { e.preventDefault(); h.scrollIntoView({ behavior: "smooth", block: "start" }); };
+    nav.appendChild(a);
+  });
+  modalBody.prepend(nav);
 }
 
 function openPerson(id) {
@@ -574,6 +592,7 @@ function openPerson(id) {
     <div class="chips">${evChips || '<span style="color:var(--muted);font-size:13.5px">未直接参与收录事件，主要事迹见上方生平</span>'}</div>
     ${relSection}
     ${wikiSection}`;
+  injectModalToc();
   openModal();
   modalBody.scrollTop = 0;
   renderMiniGraph(id, f.color);
@@ -970,6 +989,8 @@ function initGraph() {
   // 自动缩放不触发 graphRoam：布局稳定后主动同步实际缩放（两次以防中途收敛）
   setTimeout(() => syncGraphZoom(true), 700);
   setTimeout(() => syncGraphZoom(true), 2200);
+  // 布局稳定后移除加载占位（首次 1.2s 即可交互，无需等收敛）
+  setTimeout(() => { const ld = document.getElementById("chart-loading"); if (ld) ld.remove(); }, 1200);
   mainChart.on("click", p => {
     if (p.dataType === "node") openPerson(p.data.id);
     else if (p.dataType === "edge") openRelation(p.data.source, p.data.target, p.data.t);
@@ -1009,6 +1030,8 @@ document.getElementById("toggle-labels").onchange = () => applyGraphFilter();
 const backTopBtn = document.getElementById("back-top");
 window.addEventListener("scroll", () => {
   backTopBtn.classList.toggle("show", window.scrollY > 600);
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  backTopBtn.style.setProperty("--sp", max > 0 ? Math.min(100, (window.scrollY / max) * 100).toFixed(1) : 0);
 });
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -1036,7 +1059,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.30.0", build: 1790771627 };
+const CURRENT_VERSION = { version: "2.31.0", build: 1790771924 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
