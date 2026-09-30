@@ -499,6 +499,24 @@ function openPerson(id) {
     ${tl.map(([y, t]) => `<div class="life-item"><span class="life-year">${esc(y)}</span><span class="life-text">${esc(t)}</span></div>`).join("")}
   </div>` : "";
 
+  // 生平档案：手写 VITA 优先，享年自动从 life 字段解析（虚岁）
+  const vita = typeof PEOPLE_VITA !== "undefined" && PEOPLE_VITA[id];
+  const years = (p.life || "").replace(/前(\d+)/g, "-$1").match(/-?\d+/g); // 「前156」→-156
+  let ageBadge = "";
+  if (years && years.length >= 2) {
+    const a = +years[0], b = +years[1];
+    if (b >= a) ageBadge = `<span class="vita-age">${(p.life || "").match(/约|\?|？/) ? "约" : ""}享年 ${b - a + 1} 岁</span>`;
+  }
+  const vitaRows = [
+    vita && vita.birth ? `<div class="vita-row"><b>生</b><span>${glossarize(esc(vita.birth))}</span></div>` : "",
+    vita && vita.death ? `<div class="vita-row"><b>卒</b><span>${glossarize(esc(vita.death))}</span></div>` : "",
+    vita && vita.tomb ? `<div class="vita-row"><b>葬</b><span>${glossarize(esc(vita.tomb))}</span></div>` : ""
+  ].filter(Boolean).join("");
+  const vitaHtml = (ageBadge || vitaRows) ? `<div class="vita-card">
+    <div class="vita-head"><span class="vita-cap">⏳ 生平档案</span>${ageBadge}</div>
+    ${vitaRows || `<div class="vita-row"><b>生卒</b><span>${esc(p.life)}</span></div>`}
+  </div>` : "";
+
   const ex = typeof PEOPLE_EXTRA !== "undefined" && PEOPLE_EXTRA[id];
   const quotesHtml = ex && ex.quotes && ex.quotes.length
     ? `<h4 class="m-h4">💬 名言金句</h4><div class="quote-list">
@@ -542,6 +560,7 @@ function openPerson(id) {
         </div>
       </div>
     </div>
+    ${vitaHtml}
     <div class="beginner-note">先认识一下：${esc(p.name)}（${esc(p.life)}），${esc(f.name)}人物 —— ${esc(p.title)}。生词带<span class="term-demo">虚线下划线</span>的都可以点开解释。</div>
     <p class="m-desc">${glossarize(esc(p.bio))}</p>
     ${lifeHtml}
@@ -1014,7 +1033,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.23.0", build: 1789545141 };
+const CURRENT_VERSION = { version: "2.24.0", build: 1790728848 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

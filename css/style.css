@@ -1129,3 +1129,28 @@ body.light .wiki-foot { background: rgba(120, 95, 40, .05); }
   .map-nav-btn { width: 100%; }
   .china-map { height: 400px; }
 }
+
+/* 生平档案卡 */
+.vita-card {
+  margin: 12px 0 4px;
+  padding: 12px 16px;
+  border: 1px solid rgba(211,169,79,.3);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 10px 10px 0;
+  background: var(--panel-2);
+}
+.vita-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.vita-cap { font-size: 13px; font-weight: 700; color: var(--gold); letter-spacing: .08em; }
+.vita-age {
+  font-size: 12px; font-weight: 700; color: #16130b;
+  background: linear-gradient(120deg, #c9973f, #ffe9bd);
+  padding: 2px 12px; border-radius: 999px;
+}
+.vita-row { display: flex; gap: 10px; font-size: 13.5px; line-height: 1.85; color: var(--ink-2); }
+.vita-row b {
+  flex: 0 0 auto; width: 22px; height: 22px; margin-top: 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; font-size: 12px;
+  color: var(--gold); border: 1px solid rgba(211,169,79,.45);
+}
+.vita-row span { flex: 1; text-align: justify; }
