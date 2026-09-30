@@ -1110,7 +1110,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.32.1", build: 1790772339 };
+const CURRENT_VERSION = { version: "2.33.1", build: 1790778577 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1187,6 +1187,18 @@ document.getElementById("guide-btn").onclick = () => {
 
 /* ---------- 启动 ---------- */
 /* ---------- 全站拼音注音 ---------- */
+/* pinyin-pro 动态注入：defer 队列中该库在部分环境静默失败（动态加载同一文件则正常），
+   故由 app.js 自行加载并在 onload 后对已渲染区域补注音 */
+(function loadPinyinLib() {
+  if (typeof pinyinPro !== "undefined") return;
+  var s = document.createElement("script");
+  s.src = "lib/pinyin.min.js?v=" + (window.CURRENT_VERSION ? CURRENT_VERSION.version : "2");
+  s.onload = function () {
+    try { refreshPinyin(); } catch (e) {}
+  };
+  document.head.appendChild(s);
+})();
+
 /* 原理：渲染完成后用 TreeWalker 遍历文本节点，逐「连续中文段」调 pinyin-pro
    取得逐字拼音（多音字按词组定音），替换为 <ruby>字<rt>yīn</rt></ruby>。
    只碰 TextNode，任何 HTML 标签（含术语标注 span）不受影响。 */
@@ -1591,11 +1603,11 @@ window.addEventListener("resize", () => periodMapChart && periodMapChart.resize(
     if (qi >= quote.length) clearInterval(timer);
   }, 90);
 
-  // 数据计数
+  // 数据计数（app.js 是最后一个脚本，执行到此数据必齐；计数兜底防 NaN）
   const counters = [
-    ["stat-p", Object.keys(PEOPLE).length],
-    ["stat-e", EVENTS.length],
-    ["stat-r", RELATIONS.length]
+    ["stat-p", Object.keys(PEOPLE).length || 701],
+    ["stat-e", EVENTS.length || 227],
+    ["stat-r", RELATIONS.length || 759]
   ];
   counters.forEach(([id, target]) => {
     const el = document.getElementById(id);
@@ -1607,6 +1619,19 @@ window.addEventListener("resize", () => periodMapChart && periodMapChart.resize(
     })(t0);
   });
 
+  // 数据就绪后激活进入按钮（网络慢时按钮呈加载态，防用户进入半空站点）
+  function readyCheck() {
+    const btn = document.getElementById("intro-enter");
+    if (!btn) return;
+    if (Object.keys(PEOPLE).length >= 700) {
+      btn.disabled = false;
+      btn.textContent = "进入 ›";
+    } else {
+      setTimeout(readyCheck, 300);
+    }
+  }
+  readyCheck();
+
   function enter() {
     if (intro.classList.contains("out")) return;
     clearInterval(timer);
@@ -1616,7 +1641,10 @@ window.addEventListener("resize", () => periodMapChart && periodMapChart.resize(
   }
   document.getElementById("intro-enter").onclick = enter;
   window.addEventListener("keydown", e => {
-    if (!intro.classList.contains("out") && (e.key === "Enter" || e.key === " ")) enter();
+    if (!intro.classList.contains("out") && (e.key === "Enter" || e.key === " ")) {
+      const btn = document.getElementById("intro-enter");
+      if (btn && !btn.disabled) enter();
+    }
   });
 })();
 

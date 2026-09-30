@@ -7,6 +7,8 @@
 输出：项目根目录 dist.zip
 """
 import os
+import io
+import json
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,6 +27,7 @@ def main():
             p = os.path.join(ROOT, f)
             if os.path.exists(p):
                 z.write(p, f); n += 1
+        js_list = []
         for d in INCLUDE_DIRS:
             dp = os.path.join(ROOT, d)
             for base, _, files in os.walk(dp):
@@ -34,6 +37,16 @@ def main():
                     full = os.path.join(base, fn)
                     rel = os.path.relpath(full, ROOT).replace("\\", "/")
                     z.write(full, rel); n += 1
+                    if d == "js":
+                        js_list.append("./js/" + fn)
+        # SW 数据预缓存清单：全部 js（第二次访问零等待）
+        swp = os.path.join(ROOT, "sw.js")
+        if os.path.exists(swp):
+            sw = io.open(swp, encoding="utf-8").read()
+            import re as _re
+            sw = _re.sub(r"const DATA = \[[^\]]*\];",
+                         "const DATA = " + json.dumps(sorted(set(js_list))).replace("\"", "\"") + ";", sw)
+            io.open(swp, "w", encoding="utf-8").write(sw)
     size = os.path.getsize(OUT) / 1024
     print(f"已打包 {n} 个文件 -> dist.zip（{size:.0f} KB）")
 
