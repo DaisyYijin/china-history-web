@@ -248,6 +248,7 @@ function renderTimeline() {
   }
   wrap.classList.toggle("searching", !!term || catFilter !== "all" || yearFocus !== null);
   syncToggleAllBtn();
+  applyRuby(wrap);
 }
 
 function evMatch(ev, term) {
@@ -322,6 +323,7 @@ function renderPeopleGrid() {
        <p>没有匹配的人物</p>
        <p class="empty-hint">试试全名或称号，例如：李白、岳飞、钱学森</p></div>`;
 
+  applyRuby(grid);
   const pager = document.getElementById("people-pagination");
   if (pages <= 1) { pager.innerHTML = ""; return; }
   pager.innerHTML = `
@@ -368,6 +370,7 @@ let miniPersonId = null;
 function openModal() {
   modalMask.hidden = false;
   document.body.style.overflow = "hidden";
+  applyRuby(modalBody);
 }
 function closeModal() {
   modalMask.hidden = true;
@@ -1033,7 +1036,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.26.0", build: 1790731231 };
+const CURRENT_VERSION = { version: "2.27.1", build: 1790733645 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1109,6 +1112,96 @@ document.getElementById("guide-btn").onclick = () => {
 };
 
 /* ---------- 启动 ---------- */
+/* ---------- 全站拼音注音 ---------- */
+/* 原理：渲染完成后用 TreeWalker 遍历文本节点，逐「连续中文段」调 pinyin-pro
+   取得逐字拼音（多音字按词组定音），替换为 <ruby>字<rt>yīn</rt></ruby>。
+   只碰 TextNode，任何 HTML 标签（含术语标注 span）不受影响。 */
+var PINYIN_KEY = "pinyin-on";
+function pinyinEnabled() {
+  try { return localStorage.getItem(PINYIN_KEY) !== "off"; } catch (e) { return true; }
+}
+var _pyCache = new Map();
+function _segHtml(seg) {
+  if (_pyCache.has(seg)) return _pyCache.get(seg);
+  let html = null;
+  try {
+    var arr = pinyinPro.pinyin(seg, { type: "array", toneType: "symbol" });
+    if (arr && arr.length === seg.length) {
+      html = "";
+      for (var i = 0; i < seg.length; i++) html += "<ruby>" + seg[i] + "<rt>" + arr[i] + "</rt></ruby>";
+    }
+  } catch (e) { html = null; }
+  if (_pyCache.size > 4000) _pyCache.clear();
+  _pyCache.set(seg, html);
+  return html;
+}
+function applyRuby(root) {
+  if (!pinyinEnabled() || typeof pinyinPro === "undefined" || !root) return;
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function (n) {
+      if (!n.nodeValue || !/[一-鿿]/.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+      var p = n.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      var tag = p.tagName;
+      if (tag === "RT" || tag === "SCRIPT" || tag === "STYLE") return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  var nodes = [], n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(function (node) {
+    var text = node.nodeValue;
+    var parts = text.split(/([一-鿿]+)/);
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < parts.length; i++) {
+      var seg = parts[i];
+      if (!seg) continue;
+      if (/[一-鿿]/.test(seg)) {
+        var html = _segHtml(seg);
+        if (html) { var t = document.createElement("span"); t.innerHTML = html; frag.appendChild(t); continue; }
+      }
+      frag.appendChild(document.createTextNode(seg));
+    }
+    node.parentNode && node.replaceWith(frag);
+  });
+  root.classList.add("pinyin-on");
+}
+function removeRuby(root) {
+  if (!root) return;
+  root.querySelectorAll("ruby").forEach(function (r) {
+    var text = "";
+    r.childNodes.forEach(function (c) { if (c.nodeType === 3) text += c.nodeValue; });
+    r.replaceWith(document.createTextNode(text));
+  });
+  root.classList.remove("pinyin-on");
+}
+function refreshPinyin() {
+  var on = pinyinEnabled();
+  var btn = document.getElementById("pinyin-toggle");
+  if (btn) { btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", on); }
+  if (on) {
+    applyRuby(document.getElementById("timeline"));
+    applyRuby(document.getElementById("people-grid"));
+    applyRuby(document.getElementById("modal-body"));
+    applyRuby(document.getElementById("map-info"));
+  } else {
+    removeRuby(document.getElementById("timeline"));
+    removeRuby(document.getElementById("people-grid"));
+    removeRuby(document.getElementById("modal-body"));
+    removeRuby(document.getElementById("map-info"));
+  }
+}
+(function initPinyinToggle() {
+  var btn = document.getElementById("pinyin-toggle");
+  if (!btn) return;
+  btn.classList.toggle("active", pinyinEnabled());
+  btn.onclick = function () {
+    try { localStorage.setItem(PINYIN_KEY, pinyinEnabled() ? "off" : "on"); } catch (e) {}
+    refreshPinyin();
+    toastMsg(pinyinEnabled() ? "拼音注音已开启" : "拼音注音已关闭");
+  };
+})();
+
 applyTheme(currentTheme(), false);
 renderCatFilters();
 renderTimeline();
@@ -1293,6 +1386,7 @@ function renderPeriodMap() {
     <div class="map-legend">${legendHtml}${routeHtml}${boundsHtml}${battleHtml}
       ${cfg.outside ? `<span class="map-leg map-leg-out">↕ 底图之外：${esc(cfg.outside)}</span>` : ""}
     </div>`;
+  applyRuby(document.getElementById("map-info"));
 }
 
 window.addEventListener("resize", () => periodMapChart && periodMapChart.resize());
@@ -1472,3 +1566,4 @@ if ("serviceWorker" in navigator &&
     (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
+
