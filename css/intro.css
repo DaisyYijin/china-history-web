@@ -288,13 +288,6 @@ rt {
   user-select: none;
 }
 ruby { ruby-align: center; }
-#pinyin-toggle { font-weight: 700; font-size: 13px; }
-#pinyin-toggle.active {
-  background: linear-gradient(120deg, #c9973f, #ffe9bd);
-  color: #16130b;
-  border-color: var(--gold);
-}
-body.light #pinyin-toggle.active { color: #16130b; }
 
 /* 生僻字括号内联注音 */
 .pyz em {

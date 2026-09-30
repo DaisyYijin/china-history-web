@@ -1036,7 +1036,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.29.0", build: 1790771148 };
+const CURRENT_VERSION = { version: "2.30.0", build: 1790771627 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1117,13 +1117,9 @@ document.getElementById("guide-btn").onclick = () => {
    取得逐字拼音（多音字按词组定音），替换为 <ruby>字<rt>yīn</rt></ruby>。
    只碰 TextNode，任何 HTML 标签（含术语标注 span）不受影响。 */
 var PINYIN_KEY = "pinyin-on";
-/* 两档：off（默认） / on（生僻字右侧括号注音，如 髳(máo)） */
-function pyMode() {
-  var v;
-  try { v = localStorage.getItem(PINYIN_KEY) || "off"; } catch (e) { v = "off"; }
-  return (v === "hard" || v === "all") ? "on" : v; // 旧三档值迁移
-}
-function pinyinEnabled() { return pyMode() === "on"; }
+/* 生僻字括号注音恒开（如 髳(máo)），无需开关 */
+function pyMode() { return "on"; }
+function pinyinEnabled() { return true; }
 var _pyCache = new Map();
 /* 生僻字（常用字白名单外，全站不足0.2%）输出「字(pín)」内联括号结构：
    <span class="pyz" data-ch="髳">髳<em>(máo)</em></span> —— 纯内联排版零开销，data-ch 供一键还原 */
@@ -1249,13 +1245,7 @@ function _drainOffRuby() {
 
 function refreshPinyin() {
   var mode = pyMode();
-  var btn = document.getElementById("pinyin-toggle");
-  if (btn) {
-    btn.classList.toggle("active", mode === "on");
-    btn.textContent = "拼";
-    btn.setAttribute("aria-pressed", String(mode === "on"));
-    btn.title = mode === "on" ? "关闭难字注音" : "难字注音：生僻字右侧括号标拼音";
-  }
+  /* 拼音恒开，无开关按钮 */
   var roots = ["timeline", "people-grid", "modal-body", "map-info"];
   roots.forEach(function (id) {
     var el = document.getElementById(id);
@@ -1266,17 +1256,7 @@ function refreshPinyin() {
   });
 }
 
-(function initPinyinToggle() {
-  var btn = document.getElementById("pinyin-toggle");
-  if (!btn) return;
-  btn.classList.toggle("active", pinyinEnabled());
-  btn.onclick = function () {
-    var next = pyMode() === "on" ? "off" : "on";
-    try { localStorage.setItem(PINYIN_KEY, next); } catch (e) {}
-    refreshPinyin();
-    toastMsg(next === "on" ? "难字注音已开启：生僻字右侧括号标音" : "拼音注音已关闭");
-  };
-})();
+
 
 applyTheme(currentTheme(), false);
 renderCatFilters();
