@@ -1,0 +1,6 @@
+{
+  "region": "oss-cn-hangzhou",
+  "bucket": "你的桶名（全网唯一，如 china-history-xxx）",
+  "accessKeyId": "填你的AccessKey ID",
+  "accessKeySecret": "填你的AccessKey Secret"
+}

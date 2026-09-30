@@ -7,3 +7,4 @@ node_modules/
 dist.zip
 _*.js
 _*.txt
+scripts/oss-config.json

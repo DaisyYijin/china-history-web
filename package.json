@@ -1,0 +1,15 @@
+{
+  "name": "china-history-web",
+  "version": "2.33.1",
+  "private": true,
+  "description": "中国通史可视化静态站 - 部署工具依赖",
+  "scripts": {
+    "package": "python scripts/package.py",
+    "deploy:oss": "node scripts/deploy-oss.js",
+    "deploy:surge": "node scripts/surge-deploy.js"
+  },
+  "dependencies": {
+    "ali-oss": "^6.23.0",
+    "surge": "^0.24.6"
+  }
+}
