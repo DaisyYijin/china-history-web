@@ -505,7 +505,7 @@ function openPerson(id) {
   let ageBadge = "";
   if (years && years.length >= 2) {
     const a = +years[0], b = +years[1];
-    if (b >= a) ageBadge = `<span class="vita-age">${(p.life || "").match(/约|\?|？/) ? "约" : ""}享年 ${b - a + 1} 岁</span>`;
+    if (b >= a) ageBadge = `<span class="vita-age">${(p.life || "").match(/约|\?|？/) ? "约" : ""}享年 ${vita && vita.age ? vita.age : (b - a + 1)} 岁</span>`;
   }
   const vitaRows = [
     vita && vita.birth ? `<div class="vita-row"><b>生</b><span>${glossarize(esc(vita.birth))}</span></div>` : "",
@@ -1033,7 +1033,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.24.0", build: 1790728848 };
+const CURRENT_VERSION = { version: "2.24.1", build: 1790729068 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
