@@ -2,7 +2,7 @@
  * 策略：核心壳预缓存 + 运行时缓存优先（同源 GET）；
  * version.json 永远走网络（保证检查更新可靠）。
  */
-const BUILD = "1790730188";
+const BUILD = "1790730270";
 const CACHE = "shijian-" + BUILD;
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 
@@ -40,7 +40,7 @@ self.addEventListener("fetch", e => {
   }
 
   e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(hit => {
+    caches.match(req) // 不忽略 ?v=：版本号变更即绕过旧缓存.then(hit => {
       if (hit) {
         // 后台静默更新
         fetch(req).then(res => {
