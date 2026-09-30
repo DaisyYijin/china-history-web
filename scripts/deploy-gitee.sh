@@ -10,7 +10,7 @@
 #   仓库 → 服务 → Gitee Pages → 部署分支 main / 目录 / → 启动
 #   （Gitee 免费版每次更新后需回此页手动重新部署）
 set -e
-USER_NAME="${1:?用法: bash scripts/deploy-gitee.sh <Gitee用户名>}"
+USER_NAME="${1:-DaisyYijin129489}"
 REMOTE="git@gitee.com:${USER_NAME}/china-history-web.git"
 
 if git remote | grep -q '^gitee$'; then
