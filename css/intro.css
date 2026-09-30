@@ -284,7 +284,6 @@ rt {
   letter-spacing: 0;
   color: var(--muted);
   opacity: .88;
-  transform: translateY(-.1em);
   font-family: inherit;
   user-select: none;
 }

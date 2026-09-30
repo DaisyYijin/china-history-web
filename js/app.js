@@ -1036,7 +1036,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.27.3", build: 1790738725 };
+const CURRENT_VERSION = { version: "2.28.0", build: 1790770656 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1117,24 +1117,44 @@ document.getElementById("guide-btn").onclick = () => {
    取得逐字拼音（多音字按词组定音），替换为 <ruby>字<rt>yīn</rt></ruby>。
    只碰 TextNode，任何 HTML 标签（含术语标注 span）不受影响。 */
 var PINYIN_KEY = "pinyin-on";
-function pinyinEnabled() {
-  /* 默认关闭：成年阅读为主；需要儿童阅读时点导航「拼」开启并记忆 */
-  try { return localStorage.getItem(PINYIN_KEY) === "on"; } catch (e) { return false; }
+/* 三档：off（默认，成年阅读）/ hard（只注难字，儿童推荐）/ all（全部注音） */
+function pyMode() {
+  try { return localStorage.getItem(PINYIN_KEY) || "off"; } catch (e) { return "off"; }
 }
+function pinyinEnabled() { return pyMode() !== "off"; }
+var PY_HARD = function () { return pyMode() === "hard"; };
 var _pyCache = new Map();
+/* 返回 [htmlOrNull, needRuby]：hard 模式只对常用字白名单外的字注音（全站99.8%为常用字） */
 function _segHtml(seg) {
-  if (_pyCache.has(seg)) return _pyCache.get(seg);
-  let html = null;
-  try {
-    var arr = pinyinPro.pinyin(seg, { type: "array", toneType: "symbol" });
-    if (arr && arr.length === seg.length) {
-      html = "";
-      for (var i = 0; i < seg.length; i++) html += "<ruby>" + seg[i] + "<rt>" + arr[i] + "</rt></ruby>";
-    }
-  } catch (e) { html = null; }
+  var key = seg + "|" + pyMode();
+  if (_pyCache.has(key)) return _pyCache.get(key);
+  var res = null;
+  if (PY_HARD() && typeof PY_COMMON !== "undefined") {
+    var hasRare = false;
+    for (var k = 0; k < seg.length; k++) if (!PY_COMMON.has(seg[k])) { hasRare = true; break; }
+    if (!hasRare) { res = { html: null }; _pyCache.set(key, res); return res; }
+    try {
+      var arrAll = pinyinPro.pinyin(seg, { type: "array", toneType: "symbol" });
+      var html = "";
+      for (var i2 = 0; i2 < seg.length; i2++) {
+        if (!PY_COMMON.has(seg[i2])) html += "<ruby>" + seg[i2] + "<rt>" + arrAll[i2] + "</rt></ruby>";
+        else html += seg[i2];
+      }
+      res = { html: html };
+    } catch (e) { res = { html: null }; }
+  } else {
+    try {
+      var arr = pinyinPro.pinyin(seg, { type: "array", toneType: "symbol" });
+      if (arr && arr.length === seg.length) {
+        var h = "";
+        for (var j = 0; j < seg.length; j++) h += "<ruby>" + seg[j] + "<rt>" + arr[j] + "</rt></ruby>";
+        res = { html: h };
+      } else res = { html: null };
+    } catch (e) { res = { html: null }; }
+  }
   if (_pyCache.size > 4000) _pyCache.clear();
-  _pyCache.set(seg, html);
-  return html;
+  _pyCache.set(key, res);
+  return res;
 }
 function applyRuby(root) {
   if (!pinyinEnabled() || typeof pinyinPro === "undefined" || !root) return;
@@ -1152,6 +1172,7 @@ function applyRuby(root) {
   while ((n = walker.nextNode())) nodes.push(n);
   if (!nodes.length) return;
   root.classList.add("pinyin-on");
+  root.setAttribute("data-py-mode", pyMode());
   _pyQueue.push({ nodes: nodes, i: 0 });
   if (!_pyRunning) _drainRuby();
 }
@@ -1174,10 +1195,15 @@ function _drainRuby() {
       for (i = 0; i < parts.length; i++) {
         seg = parts[i];
         if (!seg) continue;
-        if (/[一-鿿]/.test(seg) && (html = _segHtml(seg))) {
-          holder = document.createElement("span");
-          holder.innerHTML = html;
-          frag.appendChild(holder);
+        if (/[一-鿿]/.test(seg)) {
+          var segRes = _segHtml(seg);
+          if (segRes && segRes.html) {
+            holder = document.createElement("span");
+            holder.innerHTML = segRes.html;
+            frag.appendChild(holder);
+          } else {
+            frag.appendChild(document.createTextNode(seg));
+          }
         } else {
           frag.appendChild(document.createTextNode(seg));
         }
@@ -1221,15 +1247,23 @@ function _drainOffRuby() {
 }
 
 function refreshPinyin() {
-  var on = pinyinEnabled();
+  var mode = pyMode();
   var btn = document.getElementById("pinyin-toggle");
-  if (btn) { btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", String(on)); }
+  if (btn) {
+    btn.classList.toggle("active", mode !== "off");
+    btn.textContent = mode === "off" ? "拼" : (mode === "hard" ? "拼·难" : "拼·全");
+    btn.setAttribute("aria-pressed", String(mode !== "off"));
+    btn.title = mode === "off" ? "开启难字注音" : (mode === "hard" ? "全部注音" : "关闭注音");
+  }
   var roots = ["timeline", "people-grid", "modal-body", "map-info"];
   roots.forEach(function (id) {
     var el = document.getElementById(id);
     if (!el) return;
-    if (on) applyRuby(el);
-    else removeRuby(el);
+    var prev = el.getAttribute("data-py-mode") || "off";
+    if (prev !== "off" && prev !== mode) removeRuby(el); // 模式切换需重建
+    if (mode !== "off") applyRuby(el);
+    else if (prev !== "off") removeRuby(el);
+    el.setAttribute("data-py-mode", mode);
   });
 }
 
@@ -1238,9 +1272,10 @@ function refreshPinyin() {
   if (!btn) return;
   btn.classList.toggle("active", pinyinEnabled());
   btn.onclick = function () {
-    try { localStorage.setItem(PINYIN_KEY, pinyinEnabled() ? "off" : "on"); } catch (e) {}
+    var next = { off: "hard", hard: "all", all: "off" }[pyMode()] || "hard";
+    try { localStorage.setItem(PINYIN_KEY, next); } catch (e) {}
     refreshPinyin();
-    toastMsg(pinyinEnabled() ? "拼音注音已开启" : "拼音注音已关闭");
+    toastMsg(next === "off" ? "拼音已关闭" : next === "hard" ? "难字注音：生僻字头顶标拼音" : "全部注音：每个汉字都标拼音（数量大，稍候渐进完成）");
   };
 })();
 
