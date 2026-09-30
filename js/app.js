@@ -183,72 +183,116 @@ function renderTimeline() {
     const p = periodOf(ev);
     (byPeriod[p] = byPeriod[p] || []).push(ev);
   });
-
-  if (openEras.size === 0) {
-    // 默认展开全部时期：确保首次访问者能看到所有事件
-    Object.keys(byPeriod).forEach(pk => openEras.add(pk));
-  }
+  if (!term) Object.keys(byPeriod).forEach(pk => openEras.add(pk));
+  const searching = !!term || catFilter !== "all" || yearFocus != null;
 
   let html = "";
   Object.keys(PERIODS).forEach(pk => {
     const list = (byPeriod[pk] || []).sort((x, y) => x.year - y.year || x._order - y._order);
-    if (!list.length) return;
     const shown = list.filter(ev =>
       (catFilter === "all" || ev.category === catFilter) &&
       (!term || evMatch(ev, term)) &&
       (!yearFocus || Math.abs(ev.year - yearFocus) <= 30));
-    if (!shown.length) return;   // 该时期无匹配事件时整个时期不显示
+    if (!shown.length) return;
+
     html += `<div class="era ${openEras.has(pk) ? "open" : ""}" data-era="${pk}">
       <div class="era-head">
         <div class="era-line"></div>
         <span>${PERIODS[pk].name}<em>${PERIODS[pk].sub}</em></span>
         <span class="era-meta">${shown.length} 事<i class="era-toggle">▾</i></span>
       </div>
-      <div class="era-body"><div class="timeline">`;
-    list.forEach(ev => {
-      const cat = CATS[ev.category];
-      const matched = (catFilter === "all" || ev.category === catFilter) &&
-        (!term || evMatch(ev, term)) &&
-        (!yearFocus || Math.abs(ev.year - yearFocus) <= 30);
-      const forceLine = ev.forces ? `<div class="force-line">${ev.forces.map(f =>
-        `<b>${esc(f.side)}</b>：${esc(f.troops)}`).join(" ｜ ")}</div>` : "";
-      html += `<div class="t-item ${matched ? "" : "hidden-by-filter"}" data-ev="${ev.id}" style="--cat:${cat.color}">
-        <span class="dot" style="background:${cat.color}"></span>
-        <div class="t-card" data-open-event="${ev.id}">
-          <div class="t-top">
-            <span class="t-year">${ev.year < 0 ? "前" + (-ev.year) : ev.year}</span>
-            <span class="t-title">${esc(ev.title)}</span>
+      <div class="era-body" data-shown="${esc(JSON.stringify(shown.map(e => e.id)))}"></div>
+    </div>`;
+  });
+
+  // 空状态
+  if (!html.trim() && (term || catFilter !== "all" || yearFocus != null)) {
+    const peopleHit = term ? PEOPLE_LIST.filter(pp => personMatch(pp, term)).length : 0;
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <p>${yearFocus != null && !term ? `${fmtYear(yearFocus)} 前后 60 年内暂无收录事件` : (term ? `没有找到与「<b>${esc(term)}</b>」相关的事件` : "该分类下暂无收录事件")}</p>
+        ${term && peopleHit ? '<p class="empty-hint">「人物志」里有 <b>' + peopleHit + '</b> 位匹配</p><button class="btn-gold" id="empty-goto-people">去人物志查看 ›</button>' :
+          '<p class="empty-hint">换个关键词试试，例如：赤壁、长征、科举、李白</p>'}
+      </div>`;
+    const gotoBtn = document.getElementById("empty-goto-people");
+    if (gotoBtn) gotoBtn.onclick = () => switchTab("people-section");
+    wrap.classList.add("searching");
+    syncToggleAllBtn();
+    return;
+  }
+
+  wrap.innerHTML = html;
+  wrap.classList.toggle("searching", searching);
+  syncToggleAllBtn();
+
+  // 懒加载：视口内/附近的展开时期立即填充，其余骨架占位，滚动进入时填充
+  lazyFillTimeline(wrap, searching);
+}
+
+/* 按事件 id 渲染卡片（供懒加载复用） */
+function renderEraCards(ids) {
+  let html = `<div class="timeline">`;
+  ids.forEach(eid => {
+    const ev = EVENT_MAP[eid]; if (!ev) return;
+    const cat = CATS[ev.category];
+    const forceLine = ev.forces ? `<div class="force-line">${ev.forces.map(f =>
+      `<b>${esc(f.side)}</b>：${esc(f.troops)}`).join(" ｜ ")}</div>` : "";
+    html += `<div class="t-item" data-ev="${ev.id}" style="--cat:${cat.color}">
+          <div class="t-head">
             <span class="t-tag" style="color:${cat.color}">${cat.name}</span>
           </div>
           <div class="t-date">${esc(ev.date)}</div>
+          <div class="t-title">${esc(ev.title)}</div>
           <div class="t-snippet">${esc(ev.desc.slice(0, 64))}…</div>
           ${forceLine}
           <div class="t-people">关键人物：<i>${ev.people.map(id => esc(PERSON_MAP[id] ? PERSON_MAP[id].name : id)).join("、") || "—"}</i></div>
           <span class="t-more">查看详情 ›</span>
       </div>`;
-    });
-    html += `</div></div></div>`;
   });
-  // 搜索/筛选后零结果：给出提示与跨区引导，而不是一片空白
-  if (!html.trim() && (term || catFilter !== "all" || yearFocus !== null)) {
-    const peopleHit = term ? PEOPLE_LIST.filter(pp =>
-      personMatch(pp, term)).length : 0;
-    wrap.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <p>${yearFocus !== null && !term ? `${fmtYear(yearFocus)} 前后 60 年内暂无收录事件` : (term ? `没有找到与「<b>${esc(term)}</b>」相关的事件` : "该分类下暂无收录事件")}</p>
-        ${term && peopleHit ? `<p class="empty-hint">「人物志」里有 <b>${peopleHit}</b> 位匹配</p>
-          <button class="btn-gold" id="empty-goto-people">去人物志查看 ›</button>` :
-          `<p class="empty-hint">换个关键词试试，例如：赤壁、长征、科举、李白</p>`}
-      </div>`;
-    const gotoBtn = document.getElementById("empty-goto-people");
-    if (gotoBtn) gotoBtn.onclick = () => switchTab("people-section");
-  } else {
-    wrap.innerHTML = html;
-  }
-  wrap.classList.toggle("searching", !!term || catFilter !== "all" || yearFocus !== null);
-  syncToggleAllBtn();
-  applyRuby(wrap);
+  html += `</div>`;
+  return html;
+}
+
+/* 懒加载引擎：骨架 → 视口附近展开时期填充真实卡 */
+var _eraIO = null;
+function lazyFillTimeline(wrap, forceAll) {
+  if (_eraIO) { _eraIO.disconnect(); _eraIO = null; }
+  wrap.querySelectorAll(".era").forEach(era => {
+    const body = era.querySelector(".era-body");
+    if (!body || body.dataset.filled === "1") return;
+    const isOpen = era.classList.contains("open");
+    if (forceAll || !isOpen) {
+      // 搜索模式或折叠时期：折叠的不填充；搜索时全量填
+      if (forceAll) { body.innerHTML = renderEraCards(JSON.parse(body.dataset.shown)); body.dataset.filled = "1"; }
+      else body.innerHTML = "";
+      return;
+    }
+    // 展开但未填充：先骨架
+    const n = JSON.parse(body.dataset.shown).length;
+    body.innerHTML = `<div class="era-skeleton">${Array(Math.min(n, 12)).fill('<div class="sk-card"></div>').join("")}</div>`;
+  });
+  // IntersectionObserver 逐期填充
+  _eraIO = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const era = en.target;
+      const body = era.querySelector(".era-body");
+      if (body && body.dataset.filled !== "1" && era.classList.contains("open")) {
+        body.innerHTML = renderEraCards(JSON.parse(body.dataset.shown));
+        body.dataset.filled = "1";
+        applyRuby(body.querySelector(".timeline"));
+      }
+      _eraIO.unobserve(era);
+    });
+  }, { rootMargin: "600px 0px" });
+  wrap.querySelectorAll(".era.open").forEach(era => {
+    const body = era.querySelector(".era-body");
+    if (body && body.dataset.filled !== "1") _eraIO.observe(era);
+  });
+  // 首屏兜底：立即填充第一个时期
+  const first = wrap.querySelector(".era.open .era-body:not([data-filled='1'])");
+  if (first) { first.innerHTML = renderEraCards(JSON.parse(first.dataset.shown)); first.dataset.filled = "1"; applyRuby(first.querySelector(".timeline")); }
 }
 
 function evMatch(ev, term) {
@@ -261,8 +305,15 @@ document.getElementById("timeline").addEventListener("click", e => {
   if (head) {
     const era = head.parentElement;
     era.classList.toggle("open");
-    if (era.classList.contains("open")) openEras.add(era.dataset.era);
-    else openEras.delete(era.dataset.era);
+    if (era.classList.contains("open")) {
+      openEras.add(era.dataset.era);
+      const body = era.querySelector(".era-body");
+      if (body && body.dataset.filled !== "1") {
+        body.innerHTML = renderEraCards(JSON.parse(body.dataset.shown));
+        body.dataset.filled = "1";
+        applyRuby(body.querySelector(".timeline"));
+      }
+    } else openEras.delete(era.dataset.era);
     syncToggleAllBtn();
   }
 });
@@ -313,7 +364,7 @@ function renderPeopleGrid() {
   grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
     return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}" style="--pc:${f.color}">
-      <div class="avatar" style="color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
+      <div class="avatar" style="--ac:${f.color};color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
       <div class="p-name">${esc(p.name)}</div>
       <div class="p-life">${esc(p.life)}</div>
       <div class="p-title">${esc(p.title)}</div>
@@ -571,7 +622,7 @@ function openPerson(id) {
     : "";
   modalBody.innerHTML = `
     <div class="person-head">
-      <div class="avatar" style="color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
+      <div class="avatar" style="--ac:${f.color};color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
       <div class="p-meta">
         <h3>${esc(p.name)}</h3>
         <div class="p-life">${esc(p.life)}</div>
@@ -1059,7 +1110,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.31.0", build: 1790771924 };
+const CURRENT_VERSION = { version: "2.32.1", build: 1790772339 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
