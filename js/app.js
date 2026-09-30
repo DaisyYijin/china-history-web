@@ -1036,7 +1036,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.27.2", build: 1790734258 };
+const CURRENT_VERSION = { version: "2.27.3", build: 1790738725 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1150,48 +1150,89 @@ function applyRuby(root) {
   });
   var nodes = [], n;
   while ((n = walker.nextNode())) nodes.push(n);
-  nodes.forEach(function (node) {
-    var text = node.nodeValue;
-    var parts = text.split(/([一-鿿]+)/);
-    var frag = document.createDocumentFragment();
-    for (var i = 0; i < parts.length; i++) {
-      var seg = parts[i];
-      if (!seg) continue;
-      if (/[一-鿿]/.test(seg)) {
-        var html = _segHtml(seg);
-        if (html) { var t = document.createElement("span"); t.innerHTML = html; frag.appendChild(t); continue; }
-      }
-      frag.appendChild(document.createTextNode(seg));
-    }
-    node.parentNode && node.replaceWith(frag);
-  });
+  if (!nodes.length) return;
   root.classList.add("pinyin-on");
+  _pyQueue.push({ nodes: nodes, i: 0 });
+  if (!_pyRunning) _drainRuby();
 }
+
+/* 分片处理队列：每帧预算 ~12ms，时间轴 2 万字渐进注音而不冻结页面 */
+var _pyQueue = [];
+var _pyRunning = false;
+function _drainRuby() {
+  _pyRunning = true;
+  var deadline = performance.now() + 12;
+  while (_pyQueue.length && performance.now() < deadline) {
+    var job = _pyQueue[0];
+    var node, text, parts, frag, i, seg, html, holder;
+    while (job.i < job.nodes.length && performance.now() < deadline) {
+      node = job.nodes[job.i++];
+      if (!node.parentNode) continue; // 期间被重新渲染移除的节点直接跳过
+      text = node.nodeValue;
+      parts = text.split(/([一-鿿]+)/);
+      frag = document.createDocumentFragment();
+      for (i = 0; i < parts.length; i++) {
+        seg = parts[i];
+        if (!seg) continue;
+        if (/[一-鿿]/.test(seg) && (html = _segHtml(seg))) {
+          holder = document.createElement("span");
+          holder.innerHTML = html;
+          frag.appendChild(holder);
+        } else {
+          frag.appendChild(document.createTextNode(seg));
+        }
+      }
+      node.parentNode.replaceChild(frag, node);
+    }
+    if (job.i >= job.nodes.length) _pyQueue.shift();
+    else break;
+  }
+  if (_pyQueue.length) setTimeout(_drainRuby, 0);
+  else _pyRunning = false;
+}
+
 function removeRuby(root) {
   if (!root) return;
-  root.querySelectorAll("ruby").forEach(function (r) {
-    var text = "";
-    r.childNodes.forEach(function (c) { if (c.nodeType === 3) text += c.nodeValue; });
-    r.replaceWith(document.createTextNode(text));
-  });
   root.classList.remove("pinyin-on");
+  var rubies = Array.prototype.slice.call(root.querySelectorAll("ruby"));
+  if (!rubies.length) return;
+  _pyOffQueue.push({ rubies: rubies, root: root, i: 0 });
+  if (!_pyOffRunning) _drainOffRuby();
 }
+var _pyOffQueue = [];
+var _pyOffRunning = false;
+function _drainOffRuby() {
+  _pyOffRunning = true;
+  var deadline = performance.now() + 12;
+  while (_pyOffQueue.length && performance.now() < deadline) {
+    var job = _pyOffQueue[0], r, text, c;
+    while (job.i < job.rubies.length && performance.now() < deadline) {
+      r = job.rubies[job.i++];
+      if (!r.parentNode) continue;
+      text = "";
+      for (c = 0; c < r.childNodes.length; c++) if (r.childNodes[c].nodeType === 3) text += r.childNodes[c].nodeValue;
+      r.replaceWith(document.createTextNode(text));
+    }
+    if (job.i >= job.rubies.length) { try { job.root.normalize(); } catch (e) {} _pyOffQueue.shift(); }
+    else break;
+  }
+  if (_pyOffQueue.length) setTimeout(_drainOffRuby, 0);
+  else _pyOffRunning = false;
+}
+
 function refreshPinyin() {
   var on = pinyinEnabled();
   var btn = document.getElementById("pinyin-toggle");
-  if (btn) { btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", on); }
-  if (on) {
-    applyRuby(document.getElementById("timeline"));
-    applyRuby(document.getElementById("people-grid"));
-    applyRuby(document.getElementById("modal-body"));
-    applyRuby(document.getElementById("map-info"));
-  } else {
-    removeRuby(document.getElementById("timeline"));
-    removeRuby(document.getElementById("people-grid"));
-    removeRuby(document.getElementById("modal-body"));
-    removeRuby(document.getElementById("map-info"));
-  }
+  if (btn) { btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", String(on)); }
+  var roots = ["timeline", "people-grid", "modal-body", "map-info"];
+  roots.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (on) applyRuby(el);
+    else removeRuby(el);
+  });
 }
+
 (function initPinyinToggle() {
   var btn = document.getElementById("pinyin-toggle");
   if (!btn) return;
