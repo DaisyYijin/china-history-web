@@ -1157,7 +1157,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.44.0", build: 1790864658 };
+const CURRENT_VERSION = { version: "2.45.0", build: 1790865478 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1424,7 +1424,7 @@ var mapCurrentPk = 4;
 const MAP_DIM = () => (document.body.classList.contains("light") ? "#e8e2d2" : "#272c38");
 const MAP_DIM_LINE = () => (document.body.classList.contains("light") ? "rgba(90,80,60,.35)" : "rgba(255,255,255,.08)");
 
-/* ---------- 战争动画：按时序逐场点亮战役 + 线路流动 ---------- */
+/* ---------- 疆域推演：时期渐变 + 战役逐场点亮 + 线路流动 一体化 ---------- */
 function getPeriodBattles() {
   return typeof BATTLE_COORDS === "undefined" ? [] :
     EVENTS.filter(ev => ev.category === "war"
@@ -1440,50 +1440,7 @@ function buildBattleItem(ev, showLabel) {
              formatter: ev.title.length > 12 ? ev.title.slice(0, 11) + "…" : ev.title }
   };
 }
-var _warAnimTimer = null;
-function stopWarAnim(restore) {
-  if (_warAnimTimer) { clearInterval(_warAnimTimer); _warAnimTimer = null; }
-  const btn = document.getElementById("map-war-anim");
-  if (btn) btn.classList.remove("playing");
-  if (restore && periodMapChart) {
-    try {
-      periodMapChart.setOption({ series: [
-        { id: "routes", effect: { show: false } },
-        { id: "battles", data: getPeriodBattles().map(ev => buildBattleItem(ev, false)) }
-      ] });
-    } catch (e) {}
-  }
-}
-function playWarAnim() {
-  stopWarAnim(false);
-  const t = document.getElementById("toggle-map-battles");
-  if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change")); }
-  const btn = document.getElementById("map-war-anim");
-  if (btn) btn.classList.add("playing");
-  // 行军/征伐线路开启流动箭头
-  try {
-    periodMapChart.setOption({ series: [{ id: "routes",
-      effect: { show: true, period: 5, trailLength: .45, symbol: "arrow", symbolSize: 7 } }] });
-  } catch (e) {}
-  const list = getPeriodBattles().slice().sort((a, b) => a.year - b.year);
-  if (!list.length) { stopWarAnim(false); return; }
-  let i = 0;
-  const step = () => {
-    if (i >= list.length) { stopWarAnim(true); return; }  // 演完恢复常态
-    const shown = list.slice(0, ++i).map((ev, k) => buildBattleItem(ev, k === i - 1));
-    periodMapChart.setOption({ series: [{ id: "battles", data: shown }] });
-  };
-  step();
-  _warAnimTimer = setInterval(step, 1200);
-}
-(function bindWarAnim() {
-  const btn = document.getElementById("map-war-anim");
-  if (!btn) return;
-  btn.onclick = () => _warAnimTimer ? stopWarAnim(true) : playWarAnim();
-})();
-
-/* ---------- 疆域时间线导航：16 时期条 + 自动演进 ---------- */
-var _mapPlayTimer = null;
+/* ---------- 疆域时间线导航：16 时期条 ---------- */
 function buildMapTimeline() {
   const track = document.getElementById("mtl-track");
   const labels = document.getElementById("mtl-labels");
@@ -1499,7 +1456,7 @@ function buildMapTimeline() {
       <span>${esc(PERIODS[pk].name)}</span></button>`;
   }).join("");
   track.querySelectorAll(".mtl-seg").forEach(b => {
-    b.onclick = () => { stopMapPlay(); setMapPk(+b.dataset.pk); };
+    b.onclick = () => setMapPk(+b.dataset.pk);
   });
   labels.innerHTML = keys.map(pk => (PERIOD_MAPS[pk] ? PERIOD_MAPS[pk].years.split("—")[0].trim() : ""))
     .concat(["今"]).map(t => `<i>${esc(t)}</i>`).join("");
@@ -1509,25 +1466,65 @@ function updateMapTimeline() {
   document.querySelectorAll(".mtl-seg").forEach(b =>
     b.classList.toggle("active", +b.dataset.pk === mapCurrentPk));
 }
-function setMapPk(pk) {
-  stopWarAnim(false);
+
+var _evolStepTimer = null;   // 时期推进
+var _evolRevealTimer = null; // 战役逐场揭示
+var _evolOn = false;
+function _applyPk(pk) {
   mapCurrentPk = ((pk - 1 + 16) % 16) + 1;
   renderPeriodMap(); renderMapEras(); updateMapTimeline();
 }
-function stopMapPlay() {
-  if (!_mapPlayTimer) return;
-  clearInterval(_mapPlayTimer); _mapPlayTimer = null;
+function stopEvolution(restore) {
+  clearTimeout(_evolStepTimer); clearTimeout(_evolRevealTimer);
+  _evolStepTimer = _evolRevealTimer = null; _evolOn = false;
   const btn = document.getElementById("map-play");
-  if (btn) { btn.textContent = "▶ 演进"; btn.classList.remove("playing"); }
+  if (btn) { btn.textContent = "▶ 推演"; btn.classList.remove("playing"); }
+  if (restore && periodMapChart) {
+    try {
+      periodMapChart.setOption({ series: [
+        { id: "routes", effect: { show: false } },
+        { id: "battles", data: getPeriodBattles().map(ev => buildBattleItem(ev, false)) }
+      ] });
+    } catch (e) {}
+  }
+}
+function _evolveStep() {
+  _applyPk(mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1);
+  // 线路开启流动箭头；战役标记先清空，随颜色过渡后逐场揭示
+  try {
+    periodMapChart.setOption({ series: [
+      { id: "routes",
+        effect: { show: true, period: 5, trailLength: .45, symbol: "arrow", symbolSize: 7 } },
+      { id: "battles", data: [] }
+    ] });
+  } catch (e) {}
+  const list = getPeriodBattles().slice().sort((a, b) => a.year - b.year);
+  let i = 0;
+  const reveal = () => {
+    if (!_evolOn) return;
+    if (i < list.length) {
+      const shown = list.slice(0, ++i).map((ev, k) => buildBattleItem(ev, k === i - 1));
+      periodMapChart.setOption({ series: [{ id: "battles", data: shown }] });
+      _evolRevealTimer = setTimeout(reveal, 750);
+    } else {
+      _evolStepTimer = setTimeout(_evolveStep, Math.max(1400, 2600 - list.length * 200));
+    }
+  };
+  _evolRevealTimer = setTimeout(reveal, 1000); // 给疆域颜色过渡留时间
+}
+function setMapPk(pk) {
+  stopEvolution(true);
+  _applyPk(pk);
 }
 (function bindMapPlay() {
   const btn = document.getElementById("map-play");
   if (!btn) return;
+  btn.title = "自动推演：疆域渐变 + 战役逐场点亮";
   btn.onclick = () => {
-    if (_mapPlayTimer) { stopMapPlay(); return; }
+    if (_evolOn) { stopEvolution(true); return; }
+    _evolOn = true;
     btn.textContent = "⏸ 暂停"; btn.classList.add("playing");
-    setMapPk(mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1);
-    _mapPlayTimer = setInterval(() => setMapPk(mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1), 2600);
+    _evolveStep();
   };
 })();
 
@@ -1539,8 +1536,8 @@ function initPeriodMap() {
   const nextBtn = document.getElementById("map-next");
   const battleToggle = document.getElementById("toggle-map-battles");
   if (battleToggle) battleToggle.onchange = () => renderPeriodMap();
-  if (prevBtn) prevBtn.onclick = () => { stopMapPlay(); setMapPk(mapCurrentPk - 1); };
-  if (nextBtn) nextBtn.onclick = () => { stopMapPlay(); setMapPk(mapCurrentPk + 1); };
+  if (prevBtn) prevBtn.onclick = () => { setMapPk(mapCurrentPk - 1); };
+  if (nextBtn) nextBtn.onclick = () => { setMapPk(mapCurrentPk + 1); };
   periodMapChart = echarts.init(el);
   renderMapEras();
   try { renderPeriodMap(); } catch (e) { /* 首次渲染失败不阻断交互，切换时期即恢复 */ }
@@ -1557,7 +1554,7 @@ function renderMapEras() {
     `<button class="map-era-btn ${String(pk) === String(mapCurrentPk) ? "active" : ""}" data-pk="${pk}" title="${esc(PERIODS[pk].sub)}">${esc(PERIODS[pk].name)}</button>`
   ).join("");
   box.querySelectorAll(".map-era-btn").forEach(b => {
-    b.onclick = () => { stopMapPlay(); setMapPk(+b.dataset.pk); };
+    b.onclick = () => { setMapPk(+b.dataset.pk); };
   });
   const cur = box.querySelector(".map-era-btn.active");
   if (cur) cur.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
