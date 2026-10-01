@@ -17876,7 +17876,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.40.2", build: 1790862566 };
+const CURRENT_VERSION = { version: "2.41.0", build: 1790863138 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18189,16 +18189,21 @@ function renderPeriodMap() {
   const listed = cfg.areas || {};
   const geoJson = echarts.getMap("china") ? echarts.getMap("china").geoJson : null;
   const names = geoJson ? geoJson.features.map(f => f.properties.name) : [];
+  // 核心领土染色必须走 geo.regions——map series 挂 geoIndex 时 data.itemStyle.areaColor 不生效
+  const regions = names.map(n => {
+    const pk = listed[n];
+    const pol = pk && polities[pk] ? polities[pk] : null;
+    return {
+      name: n,
+      itemStyle: { areaColor: pol ? pol.color : MAP_DIM(), borderColor: "rgba(0,0,0,.25)" },
+      emphasis: { itemStyle: { areaColor: pol ? pol.color : MAP_DIM() } },
+      select: { disabled: true }
+    };
+  });
   const data = names.map(n => {
     const pk = listed[n];
     const pol = pk && polities[pk] ? polities[pk] : null;
-    return pol
-      ? { name: n, pol: pol.name,
-          itemStyle: { areaColor: pol.color, borderColor: "rgba(0,0,0,.25)" },
-          emphasis: { itemStyle: { areaColor: pol.color } } }
-      : { name: n, pol: null,
-          itemStyle: { areaColor: MAP_DIM(), borderColor: MAP_DIM_LINE() },
-          emphasis: { itemStyle: { areaColor: MAP_DIM() } } };
+    return { name: n, pol: pol ? pol.name : null };  // 仅供 tooltip 显示政权名
   });
 
   const showBattles = document.getElementById("toggle-map-battles").checked;
@@ -18237,6 +18242,7 @@ function renderPeriodMap() {
     geo: {
       map: "china", roam: true, zoom: 1.12, aspectScale: .82,
       itemStyle: { borderColor: "rgba(0,0,0,.25)", borderWidth: .6 },
+      regions,
       label: { show: false },
       select: { disabled: true }
     },
