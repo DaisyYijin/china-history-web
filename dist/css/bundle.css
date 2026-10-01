@@ -1104,7 +1104,8 @@ body.light .wiki-foot { background: rgba(120, 95, 40, .05); }
 }
 .vita-row { display: flex; gap: 10px; font-size: 13.5px; line-height: 1.85; color: var(--ink-2); }
 .vita-row b {
-  flex: 0 0 auto; width: 22px; height: 22px; margin-top: 3px;
+  flex: 0 0 auto; min-width: 22px; width: auto; height: 22px; margin-top: 3px;
+  padding: 0 5px; white-space: nowrap;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 6px; font-size: 12px;
   color: var(--gold); border: 1px solid rgba(211,169,79,.45);

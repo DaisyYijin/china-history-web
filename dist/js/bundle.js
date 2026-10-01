@@ -17870,7 +17870,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.39.2", build: 1790859894 };
+const CURRENT_VERSION = { version: "2.39.3", build: 1790860081 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
