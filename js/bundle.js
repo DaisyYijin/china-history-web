@@ -16192,18 +16192,123 @@ Object.assign(PEOPLE, {
 
 ;
 /* ===================== js/portraits.js ===================== */
-/* =========================================================
- * 人物画像索引
- * 画像文件放 img/p/{人物id}.jpg（或 .png/.webp），在此登记后
- * 人物志卡片与简介弹窗的头像将显示画像（印章框保留作边框），
- * 图片缺失/加载失败自动回退为印章字。
- * 批量抓取：node scripts/fetch-portraits.js（维基百科，需可访问网络）
- * ========================================================= */
-
+/* 人物画像索引（百度百科公开词条画像，scripts 内工具可再抓取扩充）*/
 const PORTRAITS = {
-  /* 示例：
-  "libai": "img/p/libai.jpg",
-  "qinshihuang": "img/p/qinshihuang.jpg" */
+ "baijuyi": "img/p/baijuyi.jpg",
+ "baozheng": "img/p/baozheng.jpg",
+ "caocao": "img/p/caocao.jpg",
+ "chenduxiu": "img/p/chenduxiu.jpg",
+ "cixi": "img/p/cixi.jpg",
+ "dengjiaxian": "img/p/dengjiaxian.jpg",
+ "dengxiaoping": "img/p/dengxiaoping.jpg",
+ "dufu": "img/p/dufu.jpg",
+ "dumu": "img/p/dumu.jpg",
+ "guanhanqing": "img/p/guanhanqing.jpg",
+ "guanyu": "img/p/guanyu.jpg",
+ "gukaizhi": "img/p/gukaizhi.jpg",
+ "hanwudi": "img/p/hanwudi.jpg",
+ "hanxin": "img/p/hanxin.jpg",
+ "hanyu": "img/p/hanyu.jpg",
+ "hongxiuquan": "img/p/hongxiuquan.jpg",
+ "hualuogeng": "img/p/hualuogeng.jpg",
+ "huangdi": "img/p/huangdi.jpg",
+ "huanggongwang": "img/p/huanggongwang.jpg",
+ "huangtaiji": "img/p/huangtaiji.jpg",
+ "huangxing": "img/p/huangxing.jpg",
+ "hubilie": "img/p/hubilie.jpg",
+ "huoqubing": "img/p/huoqubing.jpg",
+ "hushi": "img/p/hushi.jpg",
+ "jiangziya": "img/p/jiangziya.jpg",
+ "jikang": "img/p/jikang.jpg",
+ "kangyouwei": "img/p/kangyouwei.jpg",
+ "kongzi": "img/p/kongzi.jpg",
+ "laozi": "img/p/laozi.jpg",
+ "liangqichao": "img/p/liangqichao.jpg",
+ "lianpo": "img/p/lianpo.jpg",
+ "libai": "img/p/libai.jpg",
+ "lidazhao": "img/p/lidazhao.jpg",
+ "lihe": "img/p/lihe.jpg",
+ "lihongzhang": "img/p/lihongzhang.jpg",
+ "lijing": "img/p/lijing.jpg",
+ "linxiangru": "img/p/linxiangru.jpg",
+ "linzexu": "img/p/linzexu.jpg",
+ "liqingzhao": "img/p/liqingzhao.jpg",
+ "lishangyin": "img/p/lishangyin.jpg",
+ "lisi": "img/p/lisi.jpg",
+ "lisiguang": "img/p/lisiguang.jpg",
+ "liubang": "img/p/liubang.jpg",
+ "liubei": "img/p/liubei.jpg",
+ "liushaoqi": "img/p/liushaoqi.jpg",
+ "liuzongyuan": "img/p/liuzongyuan.jpg",
+ "lizicheng": "img/p/lizicheng.jpg",
+ "luxun": "img/p/luxun.jpg",
+ "luyou": "img/p/luyou.jpg",
+ "maozedong": "img/p/maozedong.jpg",
+ "matsuiiwane": "img/p/matsuiiwane.jpg",
+ "mengzi": "img/p/mengzi.jpg",
+ "mozi": "img/p/mozi.jpg",
+ "nuerhachi": "img/p/nuerhachi.jpg",
+ "pengdehuai": "img/p/pengdehuai.jpg",
+ "qianxuesen": "img/p/qianxuesen.jpg",
+ "qijiguang": "img/p/qijiguang.jpg",
+ "qinshihuang": "img/p/qinshihuang.jpg",
+ "qiujin": "img/p/qiujin.jpg",
+ "quyuan": "img/p/quyuan.jpg",
+ "shangtang": "img/p/shangtang.jpg",
+ "shangyang": "img/p/shangyang.jpg",
+ "simaguang": "img/p/simaguang.jpg",
+ "simaqian": "img/p/simaqian.jpg",
+ "simaxiangru": "img/p/simaxiangru.jpg",
+ "simayi": "img/p/simayi.jpg",
+ "songjiaoren": "img/p/songjiaoren.jpg",
+ "songqingling": "img/p/songqingling.jpg",
+ "sunquan": "img/p/sunquan.jpg",
+ "sushi": "img/p/sushi.jpg",
+ "suzhe": "img/p/suzhe.jpg",
+ "tansitong": "img/p/tansitong.jpg",
+ "taoyuanming": "img/p/taoyuanming.jpg",
+ "tiemuzhen": "img/p/tiemuzhen.jpg",
+ "tuyouyou": "img/p/tuyouyou.jpg",
+ "wanganshi": "img/p/wanganshi.jpg",
+ "wangwei": "img/p/wangwei.jpg",
+ "wangxizhi": "img/p/wangxizhi.jpg",
+ "wangyangming": "img/p/wangyangming.jpg",
+ "weiqing": "img/p/weiqing.jpg",
+ "wentianxiang": "img/p/wentianxiang.jpg",
+ "wuzetian": "img/p/wuzetian.jpg",
+ "xiangyu": "img/p/xiangyu.jpg",
+ "xinqiji": "img/p/xinqiji.jpg",
+ "xuanzang": "img/p/xuanzang.jpg",
+ "xunzi": "img/p/xunzi.jpg",
+ "xuwei": "img/p/xuwei.jpg",
+ "yandi": "img/p/yandi.jpg",
+ "yangjingyu": "img/p/yangjingyu.jpg",
+ "yuanchonghuan": "img/p/yuanchonghuan.jpg",
+ "yuanlongping": "img/p/yuanlongping.jpg",
+ "yuefei": "img/p/yuefei.jpg",
+ "yuqian": "img/p/yuqian.jpg",
+ "zengguofan": "img/p/zengguofan.jpg",
+ "zhangfei": "img/p/zhangfei.jpg",
+ "zhangjuzheng": "img/p/zhangjuzheng.jpg",
+ "zhangliang": "img/p/zhangliang.jpg",
+ "zhangqian": "img/p/zhangqian.jpg",
+ "zhangxueliang": "img/p/zhangxueliang.jpg",
+ "zhangzhidong": "img/p/zhangzhidong.jpg",
+ "zhangzizhong": "img/p/zhangzizhong.jpg",
+ "zhaokuangyin": "img/p/zhaokuangyin.jpg",
+ "zhaoyiman": "img/p/zhaoyiman.jpg",
+ "zhenghe": "img/p/zhenghe.jpg",
+ "zhongnanshan": "img/p/zhongnanshan.jpg",
+ "zhouenlai": "img/p/zhouenlai.jpg",
+ "zhouwu": "img/p/zhouwu.jpg",
+ "zhouyu": "img/p/zhouyu.jpg",
+ "zhuangzi": "img/p/zhuangzi.jpg",
+ "zhugeliang": "img/p/zhugeliang.jpg",
+ "zhuxi": "img/p/zhuxi.jpg",
+ "zhuyuanzhang": "img/p/zhuyuanzhang.jpg",
+ "zhu_de": "img/p/zhu_de.jpg",
+ "zuchongzhi": "img/p/zuchongzhi.jpg",
+ "zuozongtang": "img/p/zuozongtang.jpg"
 };
 
 ;
@@ -17913,7 +18018,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.48.1", build: 1790867044 };
+const CURRENT_VERSION = { version: "2.49.0", build: 1790868407 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
