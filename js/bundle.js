@@ -16916,7 +16916,10 @@ function renderEraCards(ids) {
           <div class="t-title">${esc(ev.title)}</div>
           <div class="t-snippet">${esc(ev.desc.slice(0, 64))}…</div>
           ${forceLine}
-          <div class="t-people">关键人物：<i>${ev.people.map(id => esc(PERSON_MAP[id] ? PERSON_MAP[id].name : id)).join("、") || "—"}</i></div>
+          <div class="t-people">关键人物：<i>${ev.people.map(id => {
+            const p = PERSON_MAP[id];
+            return p ? `<a class="t-person" data-open-person="${id}" title="点击查看${esc(p.name)}的生平详情">${esc(p.name)}</a>` : esc(id);
+          }).join("、") || "—"}</i></div>
           <span class="t-more">查看详情 ›</span>
       </div>`;
   });
@@ -17780,7 +17783,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.36.5", build: 1790829882 };
+const CURRENT_VERSION = { version: "2.37.0", build: 1790830165 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -17830,10 +17833,13 @@ async function checkUpdate(manual) {
 document.addEventListener("click", e => {
   const term = e.target.closest(".term");
   if (term) { showTermPop(term); return; }
-  const evCard = e.target.closest("[data-open-event]");
-  if (evCard) { openEvent(evCard.dataset.openEvent); return; }
+  // 人名优先于事件卡片：事件卡内的关键人名点击应打开人物，而非事件
   const pCard = e.target.closest("[data-open-person]");
   if (pCard) { openPerson(pCard.dataset.openPerson); return; }
+  const tCard = e.target.closest(".t-item[data-ev]");
+  if (tCard) { openEvent(tCard.dataset.ev); return; }
+  const evCard = e.target.closest("[data-open-event]");
+  if (evCard) { openEvent(evCard.dataset.openEvent); return; }
 });
 
 /* ---------- 新手指南 ---------- */

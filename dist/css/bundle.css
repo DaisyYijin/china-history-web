@@ -241,6 +241,10 @@ body {
 .t-card .t-snippet { margin-top: 8px; color: #c4bfae; font-size: 13.8px; line-height: 1.8; }
 .t-card .t-people { margin-top: 8px; color: var(--muted); font-size: 12.5px; }
 .t-card .t-people i { font-style: normal; color: var(--gold); }
+/* 事件卡内的关键人物名：可点击直达人物详情 */
+.t-card .t-people a.t-person { color: var(--gold); text-decoration: none; cursor: pointer;
+  border-bottom: 1px dashed rgba(211,169,79,.55); transition: color .15s, border-color .15s; }
+.t-card .t-people a.t-person:hover { color: var(--ink-strong); border-bottom-color: var(--ink-strong); border-bottom-style: solid; }
 .t-card .force-line { margin-top: 8px; font-size: 12.8px; color: #b7ac91; }
 .t-card .force-line b { color: #e3d9bd; font-weight: 600; }
 .hidden-by-filter { display: none !important; }
