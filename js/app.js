@@ -1112,7 +1112,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.35.1", build: 1790815799 };
+const CURRENT_VERSION = { version: "2.36.3", build: 1790816937 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1500,25 +1500,46 @@ function renderPeriodMap() {
       }] : []),
       ...(cfg.bounds && cfg.bounds.length ? (() => {
         const boundData = cfg.bounds.map(b => ({ name: b.name, pts: b.pts, pol: b.pol, lost: b.lost }));
-        return [{
-          type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
-          data: boundData,
-          renderItem: (params, api) => {
-            // echarts 规范：custom series 通过 dataIndex 取数据项（params.data 不保证存在）
-            const d = boundData[params.dataIndex];
-            if (!d || !d.pts || !d.pts.length) return null;
-            const pts = d.pts.map(pt => api.coord(pt));
-            const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
-            return {
-              type: "polygon",
-              shape: { points: pts, smooth: .25 },
-              style: d.lost
-                ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
-                    lineDash: [7, 5], opacity: .95 }
-                : { fill: polColor, opacity: .38, stroke: polColor, lineWidth: 1.6 }
-            };
+        const centroid = pts => {
+          const c = pts.reduce((s, p) => [s[0] + p[0], s[1] + p[1]], [0, 0]);
+          return [c[0] / pts.length, c[1] / pts.length];
+        };
+        return [
+          {
+            type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
+            data: boundData,
+            renderItem: (params, api) => {
+              // echarts 规范：custom series 通过 dataIndex 取数据项（params.data 不保证存在）
+              const d = boundData[params.dataIndex];
+              if (!d || !d.pts || !d.pts.length) return null;
+              const pts = d.pts.map(pt => api.coord(pt));
+              const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
+              return {
+                type: "polygon",
+                shape: { points: pts, smooth: .12 },
+                style: d.lost
+                  ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
+                      lineDash: [7, 5], opacity: .95 }
+                  : { fill: polColor, opacity: .38, stroke: polColor, lineWidth: 1.6 }
+              };
+            }
+          },
+          {
+            // 疆域色块中央的名称标注（走 echarts 原生 label，稳定可靠）
+            type: "scatter", coordinateSystem: "geo", zlevel: 4, silent: true,
+            symbolSize: 1, itemStyle: { color: "rgba(0,0,0,0)" },
+            data: boundData.filter(b => b.name).map(b => ({
+              name: b.name, value: centroid(b.pts),
+              label: { color: b.lost ? "#c05050" : (polities[b.pol] ? polities[b.pol].color : "#b0553c") }
+            })),
+            label: {
+              show: true, position: "inside", formatter: "{b}",
+              fontFamily: "serif", fontWeight: 700, fontSize: 12.5,
+              textBorderColor: MAP_DIM(), textBorderWidth: 3
+            },
+            labelLayout: { hideOverlap: true }
           }
-        }];
+        ];
       })() : [])
     ]
   }, true);
