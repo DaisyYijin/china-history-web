@@ -1167,7 +1167,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.46.1", build: 1790865919 };
+const CURRENT_VERSION = { version: "2.46.2", build: 1790866180 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1515,9 +1515,9 @@ function _evolveStep() {
     if (i < list.length) {
       const shown = list.slice(0, ++i).map((ev, k) => buildBattleItem(ev, k === i - 1));
       periodMapChart.setOption({ series: [{ id: "battles", data: shown }] });
-      _evolRevealTimer = setTimeout(reveal, 750);
+      _evolRevealTimer = setTimeout(reveal, 1150);
     } else {
-      _evolStepTimer = setTimeout(_evolveStep, Math.max(1400, 2600 - list.length * 200));
+      _evolStepTimer = setTimeout(_evolveStep, Math.max(2200, 3400 - list.length * 150));
     }
   };
   _evolRevealTimer = setTimeout(reveal, 1000); // 给疆域颜色过渡留时间
