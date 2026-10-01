@@ -350,10 +350,12 @@ body {
 @keyframes pop { from { transform: translateY(14px) scale(.985); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal-close {
   position: sticky; top: 0; float: right;
+  z-index: 20; /* 弹窗内滚动时，后渲染的图表/文本层级不得盖住关闭按钮 */
   width: 34px; height: 34px;
   border: 1px solid var(--line);
   border-radius: 50%;
-  background: rgba(0,0,0,.3);
+  background: rgba(10, 12, 18, .88);
+  backdrop-filter: blur(4px);
   color: var(--muted); font-size: 15px;
   cursor: pointer;
 }
