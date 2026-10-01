@@ -2,7 +2,7 @@
  * 策略：核心壳预缓存 + 运行时缓存优先（同源 GET）；
  * version.json 永远走网络（保证检查更新可靠）。
  */
-const BUILD = "1790866180";
+const BUILD = "1790866690";
 const CACHE = "shijian-" + BUILD;
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 /* 数据脚本清单由 deploy 时注入（见 scripts/package.py 同步），先内置核心批次 */

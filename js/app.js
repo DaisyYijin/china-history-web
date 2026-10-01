@@ -351,6 +351,17 @@ function renderFactionFilters() {
   });
 }
 
+/* 人物头像：复姓取两字 + 按id生成稳定纹样角 */
+var COMPOUND_SURNAMES = ["司马","上官","欧阳","诸葛","东方","独孤","慕容","宇文","长孙","皇甫","尉迟","公孙","西门","令狐","南宫","北堂","段干","呼延","端木","拓跋","完颜","爱新觉罗","叶赫那拉"];
+function avatarChars(name) {
+  for (const cs of COMPOUND_SURNAMES) if (name.startsWith(cs)) return cs;
+  return name[0];
+}
+function avatarHue(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
+  return h;
+}
 function renderPeopleGrid() {
   const grid = document.getElementById("people-grid");
   const term = getTerm();
@@ -364,7 +375,7 @@ function renderPeopleGrid() {
   grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
     return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}" style="--pc:${f.color}">
-      <div class="avatar" style="--ac:${f.color};color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${esc(avatarChars(p.name))}</div>
       <div class="p-name">${esc(p.name)}</div>
       <div class="p-life">${esc(p.life)}</div>
       <div class="p-title">${esc(p.title)}</div>
@@ -695,7 +706,7 @@ function openPerson(id) {
   const _html = _personHtmlCache.get(_cacheKey) || (() => {
     const html = `
     <div class="person-head">
-      <div class="avatar" style="--ac:${f.color};color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${esc(avatarChars(p.name))}</div>
       <div class="p-meta">
         <h3>${esc(p.name)}</h3>
         <div class="p-life">${esc(p.life)}</div>
@@ -1167,7 +1178,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.46.2", build: 1790866180 };
+const CURRENT_VERSION = { version: "2.47.2", build: 1790866690 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

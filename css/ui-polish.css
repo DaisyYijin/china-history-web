@@ -121,19 +121,24 @@ body.light .m-toc { background: linear-gradient(180deg, var(--panel) 82%, transp
   font-weight: 900;
   color: var(--ac, var(--gold));
   --a: var(--ac, var(--gold));
+  /* --h：按人物id生成的稳定纹样角，让同阵营头像各有细节 */
   background:
     linear-gradient(135deg, rgba(255,255,255,.09), transparent 62%),
+    conic-gradient(from calc(var(--h, 0) * 1deg),
+      color-mix(in srgb, var(--a) 30%, transparent), transparent 30% 70%,
+      color-mix(in srgb, var(--a) 24%, transparent)),
     repeating-linear-gradient(-45deg, var(--a) 0 3px, transparent 3px 7px),
     var(--panel-2);
-  background-blend-mode: normal, overlay, normal;
+  background-blend-mode: normal, normal, overlay, normal;
   border: 2.5px solid var(--a);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.12), 0 2px 10px rgba(0,0,0,.18);
   text-shadow: 0 1px 0 rgba(0,0,0,.18);
 }
+.p-card .avatar[data-two], .person-head .avatar[data-two] { font-size: .72em; letter-spacing: .02em; }
 .p-card .avatar::after, .person-head .avatar::after {
   content: "";
   position: absolute; inset: 3px;
-  border: 1px solid rgba(255,255,255,.28);
+  border: 1px dashed color-mix(in srgb, var(--a) 60%, rgba(255,255,255,.28));
   border-radius: 8px;
   pointer-events: none;
 }
@@ -175,9 +180,12 @@ body.light .m-toc { background: linear-gradient(180deg, var(--panel) 82%, transp
 body.light .p-card .avatar, body.light .person-head .avatar {
   background:
     linear-gradient(135deg, rgba(0,0,0,.05), transparent 62%),
+    conic-gradient(from calc(var(--h, 0) * 1deg),
+      color-mix(in srgb, var(--a) 26%, transparent), transparent 30% 70%,
+      color-mix(in srgb, var(--a) 20%, transparent)),
     repeating-linear-gradient(-45deg, var(--a) 0 3px, transparent 3px 7px),
     #fff;
-  background-blend-mode: normal, soft-light, normal;
+  background-blend-mode: normal, normal, soft-light, normal;
 }
 body.light .p-card .avatar::after, body.light .person-head .avatar::after {
   border-color: rgba(0,0,0,.15);
