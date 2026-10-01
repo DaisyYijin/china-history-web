@@ -1157,7 +1157,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.40.0", build: 1790861968 };
+const CURRENT_VERSION = { version: "2.40.1", build: 1790862134 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1566,12 +1566,15 @@ function renderPeriodMap() {
               const pts = d.pts.map(pt => api.coord(pt));
               const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
               if (d.arc) {
-                // 贴边型：贴边侧与底图共用同一条省界折线——填充不描边（借底图边界线），
-                // 仅历史外弧单独描线，两线相接处零缝隙
+                // 贴边型：与底图共用同一条省界折线（点位一致、无平滑），
+                // 叠加层自己的描边精确盖在底图深色省界线上，既无缝隙也不露黑边；
+                // 填充用带透明度的颜色值（而非整体 opacity），保证描边完全不透明
                 const arcPts = d.arc.map(pt => api.coord(pt));
+                const m6 = /^#?([0-9a-f]{6})$/i.exec(polColor);
+                const fillA = m6 ? ((n => "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + ",.22)")(parseInt(m6[1], 16))) : polColor;
                 return { type: "group", children: [
                   { type: "polygon", shape: { points: pts },
-                    style: { fill: polColor, opacity: .22 } },
+                    style: { fill: fillA, stroke: polColor, lineWidth: 1.4 } },
                   { type: "polyline", shape: { points: arcPts },
                     style: { stroke: polColor, lineWidth: 1.4 } }
                 ] };
