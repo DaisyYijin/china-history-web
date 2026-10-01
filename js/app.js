@@ -1157,7 +1157,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.39.4", build: 1790860228 };
+const CURRENT_VERSION = { version: "2.39.5", build: 1790860409 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1841,8 +1841,12 @@ window.addEventListener("pagehide", savePageState);
 (function restorePageState() {
   var st = null;
   try { st = JSON.parse(sessionStorage.getItem(PAGE_STATE_KEY) || "null"); } catch (e) {}
-  if (!st) return;
+  if (!st) return; // 无会话状态 = 新访客/分享的直达链接，交由 maybeOpenFromHash 正常打开
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  // 本会话残留的弹窗直达 hash（刷新前弹窗未关）：清掉，避免刷新自动重开弹窗
+  if (/^#?[pe]\//.test(location.hash || "")) {
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  }
   // 疆域图时期：须在 initPeriodMap 延迟触发前恢复
   if (st.mapPk >= 1 && st.mapPk <= 16) mapCurrentPk = st.mapPk;
   // 展开的朝代
