@@ -10,7 +10,10 @@
   opacity: .55;
 }
 body.light #stars { opacity: .16; }
-main, header, footer, #side-menu, #back-top, #modal-wrap { position: relative; z-index: 1; }
+/* 页面内容压在星空(z:0)之上、开场页(z:200)之下；
+   注意：#side-menu / #back-top 等悬浮元素必须保留自身的 position:fixed，
+   一旦被这里改成 relative 就会随页面滚走（v2.35.1 修复的正是这个 bug） */
+main, header, footer { position: relative; z-index: 1; }
 
 /* ---------- 开场主页 ---------- */
 #intro {

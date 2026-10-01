@@ -1112,7 +1112,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.35.0", build: 1790815311 };
+const CURRENT_VERSION = { version: "2.35.1", build: 1790815799 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
