@@ -967,11 +967,6 @@ body.light .wiki-foot { background: rgba(120, 95, 40, .05); }
 .wiki-foot a:hover { text-decoration: underline; }
 
 /* ---------- 疆域变迁地图 ---------- */
-  background: var(--gold);
-  color: #16130b;
-  border-color: var(--gold);
-  font-weight: 700;
-}
 .china-map {
   height: 560px;
   border: 1px solid rgba(128,128,128,.2);
