@@ -17870,7 +17870,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.39.3", build: 1790860081 };
+const CURRENT_VERSION = { version: "2.39.4", build: 1790860228 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18387,6 +18387,11 @@ window.addEventListener("resize", () => periodMapChart && periodMapChart.resize(
   const intro = document.getElementById("intro");
   if (!intro) return;
 
+  // 开场动画只在每位访客首次访问时播放；刷新/回访直接进入正站（记忆在 localStorage）
+  try {
+    if (localStorage.getItem("shijian-intro-seen")) { intro.remove(); return; }
+  } catch (e) {}
+
   // 朝代流转条（两份拼接实现无缝滚动）
   const dyn = "夏 商 西周 东周 春秋 战国 秦 西汉 东汉 三国 西晋 东晋 南北朝 隋 唐 五代 宋 辽金 元 明 清 民国 共和国".split(" ");
   const track = document.getElementById("intro-dynasties");
@@ -18436,6 +18441,7 @@ window.addEventListener("resize", () => periodMapChart && periodMapChart.resize(
     clearInterval(timer);
     intro.classList.add("out");
     setTimeout(() => intro.remove(), 950);
+    try { localStorage.setItem("shijian-intro-seen", "1"); } catch (e) {}
     try { document.getElementById("search-input") && document.getElementById("search-input").blur(); } catch (e) {}
   }
   document.getElementById("intro-enter").onclick = enter;
