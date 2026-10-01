@@ -145,10 +145,10 @@ body.light .m-toc { background: linear-gradient(180deg, var(--panel) 82%, transp
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0 18px;
-    padding-left: 34px;
+    padding-left: 48px;
   }
   .timeline::before { left: 9px; }
-  .t-item .dot { left: -31px; }
+  .t-item .dot { left: -44px; }
 }
 @media (min-width: 1440px) {
   .timeline { grid-template-columns: 1fr 1fr 1fr; gap: 0 16px; }

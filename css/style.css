@@ -208,7 +208,7 @@ body {
 }
 .era-head em { display: block; margin-top: 6px; font-style: normal; color: var(--muted); font-size: 12.5px; letter-spacing: .18em; }
 
-.timeline { position: relative; padding-left: 30px; }
+.timeline { position: relative; padding-left: 44px; }
 .timeline::before {
   content: "";
   position: absolute; left: 9px; top: 6px; bottom: 6px;
@@ -218,7 +218,7 @@ body {
 
 .t-item { position: relative; margin-bottom: 16px; }
 .t-item .dot {
-  position: absolute; left: -27px; top: 22px;
+  position: absolute; left: -40px; top: 22px;
   width: 12px; height: 12px;
   border-radius: 50%;
   border: 2px solid var(--bg);
@@ -777,8 +777,8 @@ button, .chip, .filter-btn, .mini-btn, .legend button,
   .filters { gap: 8px; margin-bottom: 20px; }
   .filter-btn { padding: 6px 12px; font-size: 12.5px; }
 
-  .timeline { padding-left: 24px; }
-  .t-item .dot { left: -22px; width: 10px; height: 10px; }
+  .timeline { padding-left: 32px; }
+  .t-item .dot { left: -29px; width: 10px; height: 10px; }
   .t-card { padding: 12px 14px; }
   .t-card .t-year { font-size: 17px; min-width: 50px; }
   .t-card .t-title { font-size: 15.5px; }
