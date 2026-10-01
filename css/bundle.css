@@ -638,78 +638,7 @@ body.light .legend button:hover, body.light .filter-btn:hover { border-color: rg
  * 右侧浮动导航 / 生平大事记 / 关系查询栏
  * ========================================================= */
 
-/* ---------- 右侧浮动导航 ---------- */
-#side-menu {
-  position: fixed;
-  right: 16px; top: 50%;
-  transform: translateY(-50%);
-  width: 132px;
-  max-height: 86vh;
-  overflow-y: auto;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 10px;
-  z-index: 85;
-  box-shadow: 0 10px 30px var(--shadow-card);
-  scrollbar-width: thin;
-}
-#side-menu .side-title {
-  font-size: 11px; letter-spacing: .3em; text-indent: .3em;
-  color: var(--gold); text-align: center;
-  margin: 2px 0 8px;
-}
-#side-menu .side-nav { display: flex; flex-direction: column; gap: 4px; }
-#side-menu .side-link {
-  display: block;
-  padding: 7px 10px;
-  border-radius: 8px;
-  color: var(--ink-2);
-  text-decoration: none;
-  font-size: 13.5px;
-  letter-spacing: .05em;
-  cursor: pointer;
-  transition: all .15s;
-}
-#side-menu .side-link:hover { background: var(--soft); color: var(--gold); }
-#side-menu .side-link.active {
-  background: rgba(192, 57, 43, .14);
-  color: var(--gold);
-  font-weight: 700;
-}
-#side-menu .side-divider {
-  height: 1px; margin: 10px 6px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: .4;
-}
-#side-menu .side-era {
-  display: flex; align-items: center; gap: 7px;
-  width: 100%;
-  padding: 5px 8px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: var(--muted);
-  font-family: var(--serif);
-  font-size: 12px;
-  letter-spacing: .04em;
-  cursor: pointer;
-  transition: all .12s;
-  text-align: left;
-}
-#side-menu .side-era i {
-  font-style: normal;
-  font-size: 10px;
-  width: 18px; height: 18px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  color: var(--gold);
-  flex: 0 0 auto;
-}
-#side-menu .side-era:hover { background: var(--soft); color: var(--ink); border-radius: 6px; }
 
-@media (max-width: 1360px) { #side-menu { display: none; } }
 
 /* ---------- 生平大事记（年谱） ---------- */
 .life-timeline {
@@ -826,7 +755,7 @@ body.light .life-item::before { box-shadow: 0 0 0 3px var(--panel-2); }
  * 移动端适配 & 触屏优化
  * ========================================================= */
 button, .chip, .filter-btn, .mini-btn, .legend button,
-.side-era, .switch, .p-card, .t-card, .theme-btn { touch-action: manipulation; }
+.switch, .p-card, .t-card, .theme-btn { touch-action: manipulation; }
 
 @media (max-width: 720px) {
   html { -webkit-text-size-adjust: 100%; }

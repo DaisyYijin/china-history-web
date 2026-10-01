@@ -1156,31 +1156,8 @@ window.addEventListener("scroll", () => {
 });
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-/* ---------- 右侧浮动导航 ---------- */
-function jumpToEra(pk) {
-  switchTab("timeline-section", false);
-  const key = String(pk);
-  openEras.add(key);
-  const el = document.querySelector(`#timeline .era[data-era="${key}"]`);
-  if (!el) { renderTimeline(); }
-  const target = document.querySelector(`#timeline .era[data-era="${key}"]`);
-  if (target) {
-    target.classList.add("open");
-    syncToggleAllBtn();
-    setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
-  }
-}
-(function initSideMenu() {
-  const box = document.getElementById("side-periods");
-  box.innerHTML = Object.keys(PERIODS).map(k =>
-    `<button class="side-era" data-era="${k}"><i>${k}</i>${PERIODS[k].name}</button>`).join("");
-  box.querySelectorAll(".side-era").forEach(btn => {
-    btn.onclick = () => jumpToEra(btn.dataset.era);
-  });
-})();
-
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.39.1", build: 1790831616 };
+const CURRENT_VERSION = { version: "2.39.2", build: 1790859894 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
