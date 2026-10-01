@@ -17876,7 +17876,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.40.1", build: 1790862134 };
+const CURRENT_VERSION = { version: "2.40.2", build: 1790862566 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18284,20 +18284,8 @@ function renderPeriodMap() {
               if (!d || !d.pts || !d.pts.length) return null;
               const pts = d.pts.map(pt => api.coord(pt));
               const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
-              if (d.arc) {
-                // 贴边型：与底图共用同一条省界折线（点位一致、无平滑），
-                // 叠加层自己的描边精确盖在底图深色省界线上，既无缝隙也不露黑边；
-                // 填充用带透明度的颜色值（而非整体 opacity），保证描边完全不透明
-                const arcPts = d.arc.map(pt => api.coord(pt));
-                const m6 = /^#?([0-9a-f]{6})$/i.exec(polColor);
-                const fillA = m6 ? ((n => "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + ",.22)")(parseInt(m6[1], 16))) : polColor;
-                return { type: "group", children: [
-                  { type: "polygon", shape: { points: pts },
-                    style: { fill: fillA, stroke: polColor, lineWidth: 1.4 } },
-                  { type: "polyline", shape: { points: arcPts },
-                    style: { stroke: polColor, lineWidth: 1.4 } }
-                ] };
-              }
+              // 注意：不可用 group 嵌套（echarts 5.5.1 custom series 的子元素样式会丢失→实心黑块），
+              // 单多边形 + 全量贴边点 + 零平滑即可与底图省界逐像素重合
               return {
                 type: "polygon",
                 shape: { points: pts },
