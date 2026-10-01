@@ -17774,7 +17774,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.34.0", build: 1790813417 };
+const CURRENT_VERSION = { version: "2.34.1", build: 1790814699 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18041,21 +18041,25 @@ const MAP_DIM_LINE = () => (document.body.classList.contains("light") ? "rgba(90
 function initPeriodMap() {
   const el = document.getElementById("china-map");
   if (!el || typeof echarts === "undefined") return;
-  periodMapChart = echarts.init(el);
-  renderMapEras();
-  renderPeriodMap();
-  periodMapChart.on("click", p => {
-    if (p.seriesType === "effectScatter" && p.data && p.data.eid) openEvent(p.data.eid);
-  });
-  document.getElementById("toggle-map-battles").onchange = () => renderPeriodMap();
-  document.getElementById("map-prev").onclick = () => {
+  // 先绑导航控件，再渲染：即使 echarts 首次渲染抛错，时期切换也不会失灵
+  const prevBtn = document.getElementById("map-prev");
+  const nextBtn = document.getElementById("map-next");
+  const battleToggle = document.getElementById("toggle-map-battles");
+  if (battleToggle) battleToggle.onchange = () => renderPeriodMap();
+  if (prevBtn) prevBtn.onclick = () => {
     mapCurrentPk = mapCurrentPk <= 1 ? 16 : mapCurrentPk - 1;
     renderPeriodMap(); renderMapEras();
   };
-  document.getElementById("map-next").onclick = () => {
+  if (nextBtn) nextBtn.onclick = () => {
     mapCurrentPk = mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1;
     renderPeriodMap(); renderMapEras();
   };
+  periodMapChart = echarts.init(el);
+  renderMapEras();
+  try { renderPeriodMap(); } catch (e) { /* 首次渲染失败不阻断交互，切换时期即恢复 */ }
+  periodMapChart.on("click", p => {
+    if (p.seriesType === "effectScatter" && p.data && p.data.eid) openEvent(p.data.eid);
+  });
 }
 
 function renderMapEras() {
@@ -18156,23 +18160,28 @@ function renderPeriodMap() {
           coords: r.coords,
           lineStyle: { color: r.color, width: 3, type: r.dash ? "dashed" : "solid", opacity: .75 } }))
       }] : []),
-      ...(cfg.bounds && cfg.bounds.length ? [{
-        type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
-        data: cfg.bounds.map(b => ({ name: b.name, pts: b.pts, pol: b.pol, lost: b.lost })),
-        renderItem: (params, api) => {
-          const d = params.data;
-          const pts = d.pts.map(pt => api.coord(pt));
-          const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
-          return {
-            type: "polygon",
-            shape: { points: pts, smooth: .25 },
-            style: d.lost
-              ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
-                  lineDash: [7, 5], opacity: .95 }
-              : { fill: polColor, opacity: .38, stroke: polColor, lineWidth: 1.6 }
-          };
-        }
-      }] : [])
+      ...(cfg.bounds && cfg.bounds.length ? (() => {
+        const boundData = cfg.bounds.map(b => ({ name: b.name, pts: b.pts, pol: b.pol, lost: b.lost }));
+        return [{
+          type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
+          data: boundData,
+          renderItem: (params, api) => {
+            // echarts 规范：custom series 通过 dataIndex 取数据项（params.data 不保证存在）
+            const d = boundData[params.dataIndex];
+            if (!d || !d.pts || !d.pts.length) return null;
+            const pts = d.pts.map(pt => api.coord(pt));
+            const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
+            return {
+              type: "polygon",
+              shape: { points: pts, smooth: .25 },
+              style: d.lost
+                ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
+                    lineDash: [7, 5], opacity: .95 }
+                : { fill: polColor, opacity: .38, stroke: polColor, lineWidth: 1.6 }
+            };
+          }
+        }];
+      })() : [])
     ]
   }, true);
 
