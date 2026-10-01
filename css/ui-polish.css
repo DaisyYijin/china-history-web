@@ -197,3 +197,38 @@ body.light .p-card .avatar, body.light .person-head .avatar {
 body.light .p-card .avatar::after, body.light .person-head .avatar::after {
   border-color: rgba(0,0,0,.15);
 }
+
+/* ---------- 头像大图灯箱 ---------- */
+.avatar[data-big] { cursor: zoom-in; }
+.avatar[data-big]:hover { outline: 2px solid color-mix(in srgb, var(--gold, #d3a94f) 75%, transparent); outline-offset: 2px; }
+#portrait-lb {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(6, 8, 12, .92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 30px; animation: plb-in .16s ease-out;
+}
+#portrait-lb[hidden] { display: none; }
+@keyframes plb-in { from { opacity: 0; } to { opacity: 1; } }
+.plb-fig { margin: 0; text-align: center; animation: plb-zoom .22s cubic-bezier(.2, .85, .3, 1.15); }
+@keyframes plb-zoom { from { transform: scale(.86); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.plb-fig img {
+  display: block; margin: 0 auto;
+  max-width: min(72vw, 440px); max-height: 74vh;
+  border-radius: 10px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, .7), 0 0 0 1px rgba(211, 169, 79, .35);
+}
+.plb-fig figcaption b {
+  display: block; margin-top: 14px;
+  font-family: Georgia, "STZhongsong", serif; font-size: 20px; letter-spacing: 1px;
+  color: #f2ead4;
+}
+.plb-fig figcaption span { font-size: 13px; color: #b9b19e; }
+.plb-close {
+  position: absolute; top: 18px; right: 22px;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(211, 169, 79, .45);
+  background: rgba(20, 24, 32, .72); color: #e9e4d6;
+  font-size: 16px; cursor: pointer; transition: background .15s;
+}
+.plb-close:hover { background: rgba(48, 54, 66, .95); }
+/* 深浅主题统一用深色底衬托画像，无需 body.light 分支 */

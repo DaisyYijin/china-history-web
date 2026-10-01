@@ -17742,7 +17742,7 @@ function renderPeopleGrid() {
   grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
     return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}" style="--pc:${f.color}">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}"${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? ` data-big="${p.id}"` : ""}>${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove();this.parentElement.removeAttribute('data-big')">` : ""}${esc(avatarChars(p.name))}</div>
       <div class="p-name">${esc(p.name)}</div>
       <div class="p-life">${esc(p.life)}</div>
       <div class="p-title">${esc(p.title)}</div>
@@ -17879,7 +17879,49 @@ function closeModal() {
 }
 document.getElementById("modal-close").onclick = closeModal;
 modalMask.addEventListener("click", e => { if (e.target === modalMask) closeModal(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !modalMask.hidden) closeModal(); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (portraitLb && !portraitLb.hidden) { closePortraitLb(); return; } // 灯箱开着先关灯箱，不连带关人物弹窗
+  if (!modalMask.hidden) closeModal();
+});
+
+/* ---------- 头像大图（灯箱） ---------- */
+var portraitLb = null;
+function ensurePortraitLb() {
+  if (portraitLb) return portraitLb;
+  portraitLb = document.createElement("div");
+  portraitLb.id = "portrait-lb";
+  portraitLb.hidden = true;
+  portraitLb.innerHTML = `<button class="plb-close" aria-label="关闭大图">✕</button>
+    <figure class="plb-fig">
+      <img alt="">
+      <figcaption></figcaption>
+    </figure>`;
+  document.body.appendChild(portraitLb);
+  portraitLb.querySelector(".plb-close").onclick = closePortraitLb;
+  portraitLb.addEventListener("click", e => { if (e.target === portraitLb) closePortraitLb(); });
+  return portraitLb;
+}
+function openPortraitLb(pid) {
+  var p = PEOPLE[pid];
+  var src = typeof PORTRAITS !== "undefined" && PORTRAITS[pid];
+  if (!p || !src) return;
+  var lb = ensurePortraitLb();
+  var f = FACTIONS[p.faction];
+  var img = lb.querySelector("img");
+  img.src = src;
+  img.alt = p.name + "画像";
+  lb.querySelector("figcaption").innerHTML =
+    `<b>${esc(p.name)}</b><span>${esc(p.life)} · ${esc(f.name)} · ${esc(p.title)}</span>`;
+  lb.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+function closePortraitLb() {
+  if (!portraitLb || portraitLb.hidden) return;
+  portraitLb.hidden = true;
+  // 人物弹窗仍开着时维持它的滚动锁定
+  if (modalMask.hidden) document.body.style.overflow = "";
+}
 
 /* ---------- 关系线详情：点击连线 → 相关战役/事件 ---------- */
 function sharedEventsOf(aId, bId) {
@@ -18073,7 +18115,7 @@ function openPerson(id) {
   const _html = _personHtmlCache.get(_cacheKey) || (() => {
     const html = `
     <div class="person-head">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}"${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? ` data-big="${p.id}"` : ""}>${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove();this.parentElement.removeAttribute('data-big')">` : ""}${esc(avatarChars(p.name))}</div>
       <div class="p-meta">
         <h3>${esc(p.name)}</h3>
         <div class="p-life">${esc(p.life)}</div>
@@ -18545,7 +18587,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.50.0", build: 1790869390 };
+const CURRENT_VERSION = { version: "2.50.1", build: 1790871333 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18595,6 +18637,9 @@ async function checkUpdate(manual) {
 document.addEventListener("click", e => {
   const term = e.target.closest(".term");
   if (term) { showTermPop(term); return; }
+  // 头像 → 大图（优先于所在人物卡片的打开人物）
+  const bigAv = e.target.closest(".avatar[data-big]");
+  if (bigAv) { openPortraitLb(bigAv.dataset.big); return; }
   // 人名优先于事件卡片：事件卡内的关键人名点击应打开人物，而非事件
   const pCard = e.target.closest("[data-open-person]");
   if (pCard) { openPerson(pCard.dataset.openPerson); return; }
