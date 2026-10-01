@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>中国通史 · 大事年表与人物图谱（远古 — 当代）</title>
-<link rel="stylesheet" href="css/bundle.css?v=2.37.0">
+<link rel="stylesheet" href="css/bundle.css?v=2.39.0">
   <meta name="description" content="中华上下五千年：大事年表、战役兵力对比、历代人物志与人物关系图谱。从炎黄传说到新时代。">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#f4ecd9">
@@ -46,7 +46,10 @@
         <a href="#people-section" data-tab-link="people-section" class="tab-link">人物志</a>
         <a href="#map-section" data-tab-link="map-section" class="tab-link">疆域图</a>
       </div>
-      <input type="search" id="search" placeholder="搜索事件 / 人物 / 战役…" autocomplete="off">
+      <div class="search-wrap">
+        <input type="search" id="search" placeholder="搜索事件 / 人物 / 战役（支持拼音）…" autocomplete="off">
+        <button id="search-clear" title="清空搜索" aria-label="清空搜索">✕</button>
+      </div>
       <button id="guide-btn" class="theme-btn" title="新手使用指南" aria-label="新手指南">📖</button>
       <button id="theme-toggle" class="theme-btn" title="切换亮色 / 暗色主题" aria-label="切换主题" aria-pressed="false">☀️</button>
     </div>
@@ -159,6 +162,6 @@
     </div>
   </div>
 
-<script defer src="js/bundle.js?v=2.37.0"></script>
+<script defer src="js/bundle.js?v=2.39.0"></script>
 </body>
 </html>

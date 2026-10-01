@@ -300,11 +300,6 @@ function lazyFillTimeline(wrap, forceAll) {
   if (first) { first.innerHTML = renderEraCards(JSON.parse(first.dataset.shown)); first.dataset.filled = "1"; applyRuby(first.querySelector(".timeline")); }
 }
 
-function evMatch(ev, term) {
-  const hay = [ev.title, ev.date, ev.desc, ev.result || "", ev.people.map(id => PERSON_MAP[id] && PERSON_MAP[id].name).join("、")].join("\n");
-  return hay.indexOf(term) !== -1;
-}
-
 document.getElementById("timeline").addEventListener("click", e => {
   const head = e.target.closest(".era-head");
   if (head) {
@@ -395,17 +390,57 @@ document.getElementById("people-pagination").addEventListener("click", e => {
   document.getElementById("people-section").scrollIntoView({ behavior: "instant", block: "start" });
 });
 
-function personMatch(p, term) {
-  const f = FACTIONS[p.faction];
-  const evNames = (p.events || []).map(id => EVENT_MAP[id] && EVENT_MAP[id].title).join("、");
-  return [p.name, p.title, p.life, p.bio, f.name, evNames].join("\n").indexOf(term) !== -1;
-}
+/* personMatch / evMatch / pyMatch 定义见「搜索」节（函数声明提升，前后皆可调用） */
 
 /* ---------- 搜索 ---------- */
 function getTerm() {
   const v = document.getElementById("search").value.trim();
   return v || "";
 }
+
+/* 拼音索引：首次搜索时构建一次（事件题名 + 人物名 → 全拼/首字母），
+   让 "songjing"/"sjisg"/"nanjing" 这类输入也能命中 */
+var _pyIndex = null;
+function pyIndex() {
+  if (_pyIndex) return _pyIndex;
+  _pyIndex = new Map();
+  if (typeof pinyinPro === "undefined") return _pyIndex;
+  try {
+    var build = function (key, name) {
+      var arr = pinyinPro.pinyin(name, { type: "array", toneType: "none" });
+      if (!arr || !arr.length) return;
+      var full = arr.join("").toLowerCase();
+      var initials = arr.map(function (s) { return s.charAt(0); }).join("").toLowerCase();
+      var slot = _pyIndex.get(key) || { full: "", initials: "" };
+      slot.full += (slot.full ? "|" : "") + full;
+      slot.initials += (slot.initials ? "|" : "") + initials;
+      _pyIndex.set(key, slot);
+    };
+    EVENTS.forEach(function (ev) { build("e:" + ev.id, ev.title); });
+    PEOPLE_LIST.forEach(function (p) { build("p:" + p.id, p.name); });
+  } catch (e) { /* 拼音构建失败则退化为纯汉字匹配 */ }
+  return _pyIndex;
+}
+function pyMatch(kind, id, term) {
+  if (!/[a-zA-Z]/.test(term)) return false;  // 纯中文输入无需查拼音索引
+  var slot = pyIndex().get(kind + ":" + id);
+  if (!slot) return false;
+  var t = term.toLowerCase();
+  return slot.full.indexOf(t) !== -1 || slot.initials.indexOf(t) !== -1;
+}
+
+function evMatch(ev, term) {
+  const hay = [ev.title, ev.date, ev.desc, ev.result || "", ev.people.map(id => PERSON_MAP[id] && PERSON_MAP[id].name).join("、")].join("\n");
+  return hay.indexOf(term) !== -1 || pyMatch("e", ev.id, term);
+}
+
+function personMatch(p, term) {
+  const f = FACTIONS[p.faction];
+  const evNames = (p.events || []).map(id => EVENT_MAP[id] && EVENT_MAP[id].title).join("、");
+  return [p.name, p.title, p.life, p.bio, f.name, evNames].join("\n").indexOf(term) !== -1
+    || pyMatch("p", p.id, term);
+}
+
 let searchTimer = null;
 document.getElementById("search").addEventListener("input", () => {
   clearTimeout(searchTimer);
@@ -414,8 +449,38 @@ document.getElementById("search").addEventListener("input", () => {
     renderTimeline();
     renderPeopleGrid();
     syncGraphSearch(getTerm());
+    // 关键反馈：搜索结果只显示在时间轴/人物志——人在其他页时自动带过去
+    const term = getTerm();
+    if (term && currentTab !== "timeline-section" && currentTab !== "people-section") {
+      switchTab("timeline-section");
+      const n = document.querySelectorAll("#timeline .t-item").length;
+      const m = document.querySelectorAll("#people-grid .p-card").length;
+      try { toastMsg(n ? `找到 ${n} 个相关事件` : (m ? `事件无匹配，人物志有 ${m} 位` : "没有找到相关内容"), 2200); } catch (e) {}
+    }
+    var clearBtn = document.getElementById("search-clear");
+    if (clearBtn) clearBtn.classList.toggle("show", !!term);
   }, 150);
 });
+/* Esc 清空搜索；× 按钮清空并聚焦 */
+document.getElementById("search").addEventListener("keydown", e => {
+  if (e.key === "Escape" && getTerm()) {
+    document.getElementById("search").value = "";
+    document.getElementById("search").dispatchEvent(new Event("input"));
+    e.preventDefault();
+  }
+});
+(function bindSearchClear() {
+  const btn = document.getElementById("search-clear");
+  if (!btn) return;
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const box = document.getElementById("search");
+    box.value = "";
+    box.dispatchEvent(new Event("input"));
+    box.focus();
+  });
+  btn.addEventListener("mousedown", e => e.preventDefault()); // 防止点击时失焦闪烁
+})();
 
 /* ---------- 弹窗 ---------- */
 const modalMask = document.getElementById("modal-mask");
@@ -1115,7 +1180,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.37.0", build: 1790830165 };
+const CURRENT_VERSION = { version: "2.39.0", build: 1790831322 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

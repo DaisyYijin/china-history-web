@@ -885,13 +885,13 @@ const EVENTS = [
   {
     id: "nanjing", year: 1937, date: "1937年12月13日起六周", category: "war",
     title: "南京沦陷与南京大屠杀",
-    desc: "淞沪败退后，唐生智临危受命率10余万守军保卫南京，誓言与首都共存亡。12月12日撤退命令下达仓促，守军大乱，13日南京陷落。随后六周内，侵华日军进行了灭绝人性的大屠杀、强奸和抢劫，把南京变成人间地狱。",
+    desc: "淞沪败退后，唐生智临危受命率10余万守军保卫南京，誓言与首都共存亡。12月12日撤退命令下达仓促，守军大乱，13日南京陷落。随后六周内，侵华日军进行了灭绝人性的大屠杀、强奸和抢劫，把南京变成人间地狱。华中方面军司令官松井石根、上海派遣军司令官朝香宫鸠彦王、第6师团长谷寿夫等对暴行负有直接罪责；德国人拉贝、美国人魏特琳等国际友人冒死设立安全区，庇护约25万难民。",
     forces: [
       { side: "中国守军", troops: "约10余万人" },
       { side: "日军华中方面军", troops: "约20万人" }
     ],
-    result: "遇难同胞达30万人以上（远东国际军事法庭与南京军事法庭认定）。这是人类文明史上最黑暗的一页之一，铁证如山，不容否认。1946年谷寿夫等战犯被引渡审判，处决于雨花台。",
-    people: ["tangshengzhi", "jiangjieshi"]
+    result: "遇难同胞达30万人以上（远东国际军事法庭与南京军事法庭认定）。这是人类文明史上最黑暗的一页之一，铁证如山，不容否认。战后清算：松井石根、武藤章经东京审判判处绞刑（1948年执行）；谷寿夫1947年在南京雨花台被枪决；朝香宫鸠彦王凭皇族身份逃脱审判，成为正义的遗憾。",
+    people: ["tangshengzhi", "jiangjieshi", "matsuiiwane", "asakayashuhiko", "tanihisao", "mutoakira", "rabe", "vautrin"]
   },
   {
     id: "wangpanguo", year: 1938, date: "1938年12月", category: "politics", p: 14,
@@ -16146,6 +16146,51 @@ Object.assign(PEOPLE_TIMELINE, {
 });
 
 ;
+/* ===================== js/people-nanjing.js ===================== */
+/* =========================================================
+ * 南京大屠杀专题：日军战犯与国际证人档案
+ * 数据依据远东国际军事法庭（东京审判）与南京审判战犯
+ * 军事法庭判决、幸存者证言及《拉贝日记》等史料。
+ * ========================================================= */
+
+Object.assign(FACTIONS, {
+  guoji: { name: "国际友人", color: "#4a8ba4" }
+});
+
+Object.assign(PEOPLE, {
+  "matsuiiwane": {
+    name: "松井石根", life: "1878—1948", faction: "riben", title: "华中方面军司令官 · 甲级战犯",
+    bio: "日本陆军大将，1937年淞沪会战后升任华中方面军司令官，指挥攻占南京。12月13日城陷后，其麾下日军进行了长达六周的大屠杀、强奸、抢劫与纵火，遇难同胞达30万人以上，他对此负有最高直接罪责。战后被远东国际军事法庭（东京审判）列为甲级战犯，判处绞刑，1948年12月23日在巢鸭监狱执行。",
+    events: ["nanjing"]
+  },
+  "asakayashuhiko": {
+    name: "朝香宫鸠彦王", life: "1887—1981", faction: "riben", title: "上海派遣军司令官 · 屠城密令最大嫌疑人",
+    bio: "日本皇族、陆军中将。1937年12月接替松井石根指挥进攻南京的上海派遣军，城陷前后下达「机密·阅后销毁」的作战命令，内含对俘虏「杀掉全部」的指令，被视为大屠杀规模急速扩大的关键推手。1938年因所谓「军纪问题」被召回国内。战后凭借皇族身份被盟军总部免于起诉，1981年病死日本——这是正义未能完全伸张的一页。",
+    events: ["nanjing"]
+  },
+  "tanihisao": {
+    name: "谷寿夫", life: "1882—1947", faction: "riben", title: "第6师团长 · 雨花台伏法",
+    bio: "日本陆军中将，第六师团长。所部1937年12月由中华门攻入南京，是屠城最凶残的部队之一，参与屠杀中华门一带平民战俘、强奸劫掠无恶不作。1946年被引渡至中国，由南京审判战犯军事法庭公审，1947年4月26日在南京雨花台被执行枪决，围观市民万人空巷。临刑前「两腿发软，由宪兵架赴刑场」。",
+    events: ["nanjing"]
+  },
+  "mutoakira": {
+    name: "武藤章", life: "1892—1948", faction: "riben", title: "华中方面军副参谋长 · 甲级战犯",
+    bio: "日本陆军中将，时任华中方面军副参谋长。日军攻占南京前后，他起草并下达了允许部队「就地征发」「自由行动」等命令，对军纪崩坏、暴行蔓延负有直接责任；此后又在菲律宾制造马尼拉大屠杀。战后被远东国际军事法庭列为甲级战犯，与松井石根同日（1948年12月23日）在巢鸭监狱被处以绞刑。",
+    events: ["nanjing"]
+  },
+  "rabe": {
+    name: "约翰·拉贝", life: "1882—1950", faction: "guoji", title: "南京安全区国际委员会主席 · 《拉贝日记》",
+    bio: "德国人，西门子公司驻南京代表。1937年12月南京沦陷前夕，被推选为南京安全区国际委员会主席，与二十余位留守外侨划定3.86平方公里安全区，收容庇护约25万难民；他逐日记录日军暴行的《拉贝日记》成为南京大屠杀最完整的铁证之一。1938年被迫回国后遭盖世太保讯问，晚年贫病交加，南京市民曾发起募捐接济。被称为「中国的辛德勒」。",
+    events: ["nanjing"]
+  },
+  "vautrin": {
+    name: "明妮·魏特琳", life: "1886—1941", faction: "guoji", title: "金陵女子文理学院代理院长 · 「华小姐」",
+    bio: "美国传教士、教育家，中文名华群，金陵女子文理学院教育长、代理院长。大屠杀期间开放校园设立难民所，最多时收容上万名妇女儿童；她日夜守在校门阻止日军闯入施暴，数次面对刺刀毫不退让，被难民尊称为「活菩萨」「华小姐」。因长期目睹暴行、身心受到重创，1941年回国后病逝于自杀。墓碑上刻着四个汉字——「金陵永生」。",
+    events: ["nanjing"]
+  }
+});
+
+;
 /* ===================== js/period-map.js ===================== */
 /* =========================================================
  * 疆域变迁示意地图数据（16 个时期）
@@ -16968,11 +17013,6 @@ function lazyFillTimeline(wrap, forceAll) {
   if (first) { first.innerHTML = renderEraCards(JSON.parse(first.dataset.shown)); first.dataset.filled = "1"; applyRuby(first.querySelector(".timeline")); }
 }
 
-function evMatch(ev, term) {
-  const hay = [ev.title, ev.date, ev.desc, ev.result || "", ev.people.map(id => PERSON_MAP[id] && PERSON_MAP[id].name).join("、")].join("\n");
-  return hay.indexOf(term) !== -1;
-}
-
 document.getElementById("timeline").addEventListener("click", e => {
   const head = e.target.closest(".era-head");
   if (head) {
@@ -17063,17 +17103,57 @@ document.getElementById("people-pagination").addEventListener("click", e => {
   document.getElementById("people-section").scrollIntoView({ behavior: "instant", block: "start" });
 });
 
-function personMatch(p, term) {
-  const f = FACTIONS[p.faction];
-  const evNames = (p.events || []).map(id => EVENT_MAP[id] && EVENT_MAP[id].title).join("、");
-  return [p.name, p.title, p.life, p.bio, f.name, evNames].join("\n").indexOf(term) !== -1;
-}
+/* personMatch / evMatch / pyMatch 定义见「搜索」节（函数声明提升，前后皆可调用） */
 
 /* ---------- 搜索 ---------- */
 function getTerm() {
   const v = document.getElementById("search").value.trim();
   return v || "";
 }
+
+/* 拼音索引：首次搜索时构建一次（事件题名 + 人物名 → 全拼/首字母），
+   让 "songjing"/"sjisg"/"nanjing" 这类输入也能命中 */
+var _pyIndex = null;
+function pyIndex() {
+  if (_pyIndex) return _pyIndex;
+  _pyIndex = new Map();
+  if (typeof pinyinPro === "undefined") return _pyIndex;
+  try {
+    var build = function (key, name) {
+      var arr = pinyinPro.pinyin(name, { type: "array", toneType: "none" });
+      if (!arr || !arr.length) return;
+      var full = arr.join("").toLowerCase();
+      var initials = arr.map(function (s) { return s.charAt(0); }).join("").toLowerCase();
+      var slot = _pyIndex.get(key) || { full: "", initials: "" };
+      slot.full += (slot.full ? "|" : "") + full;
+      slot.initials += (slot.initials ? "|" : "") + initials;
+      _pyIndex.set(key, slot);
+    };
+    EVENTS.forEach(function (ev) { build("e:" + ev.id, ev.title); });
+    PEOPLE_LIST.forEach(function (p) { build("p:" + p.id, p.name); });
+  } catch (e) { /* 拼音构建失败则退化为纯汉字匹配 */ }
+  return _pyIndex;
+}
+function pyMatch(kind, id, term) {
+  if (!/[a-zA-Z]/.test(term)) return false;  // 纯中文输入无需查拼音索引
+  var slot = pyIndex().get(kind + ":" + id);
+  if (!slot) return false;
+  var t = term.toLowerCase();
+  return slot.full.indexOf(t) !== -1 || slot.initials.indexOf(t) !== -1;
+}
+
+function evMatch(ev, term) {
+  const hay = [ev.title, ev.date, ev.desc, ev.result || "", ev.people.map(id => PERSON_MAP[id] && PERSON_MAP[id].name).join("、")].join("\n");
+  return hay.indexOf(term) !== -1 || pyMatch("e", ev.id, term);
+}
+
+function personMatch(p, term) {
+  const f = FACTIONS[p.faction];
+  const evNames = (p.events || []).map(id => EVENT_MAP[id] && EVENT_MAP[id].title).join("、");
+  return [p.name, p.title, p.life, p.bio, f.name, evNames].join("\n").indexOf(term) !== -1
+    || pyMatch("p", p.id, term);
+}
+
 let searchTimer = null;
 document.getElementById("search").addEventListener("input", () => {
   clearTimeout(searchTimer);
@@ -17082,8 +17162,38 @@ document.getElementById("search").addEventListener("input", () => {
     renderTimeline();
     renderPeopleGrid();
     syncGraphSearch(getTerm());
+    // 关键反馈：搜索结果只显示在时间轴/人物志——人在其他页时自动带过去
+    const term = getTerm();
+    if (term && currentTab !== "timeline-section" && currentTab !== "people-section") {
+      switchTab("timeline-section");
+      const n = document.querySelectorAll("#timeline .t-item").length;
+      const m = document.querySelectorAll("#people-grid .p-card").length;
+      try { toastMsg(n ? `找到 ${n} 个相关事件` : (m ? `事件无匹配，人物志有 ${m} 位` : "没有找到相关内容"), 2200); } catch (e) {}
+    }
+    var clearBtn = document.getElementById("search-clear");
+    if (clearBtn) clearBtn.classList.toggle("show", !!term);
   }, 150);
 });
+/* Esc 清空搜索；× 按钮清空并聚焦 */
+document.getElementById("search").addEventListener("keydown", e => {
+  if (e.key === "Escape" && getTerm()) {
+    document.getElementById("search").value = "";
+    document.getElementById("search").dispatchEvent(new Event("input"));
+    e.preventDefault();
+  }
+});
+(function bindSearchClear() {
+  const btn = document.getElementById("search-clear");
+  if (!btn) return;
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const box = document.getElementById("search");
+    box.value = "";
+    box.dispatchEvent(new Event("input"));
+    box.focus();
+  });
+  btn.addEventListener("mousedown", e => e.preventDefault()); // 防止点击时失焦闪烁
+})();
 
 /* ---------- 弹窗 ---------- */
 const modalMask = document.getElementById("modal-mask");
@@ -17783,7 +17893,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.37.0", build: 1790830165 };
+const CURRENT_VERSION = { version: "2.39.0", build: 1790831322 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
