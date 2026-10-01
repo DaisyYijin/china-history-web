@@ -967,55 +967,6 @@ body.light .wiki-foot { background: rgba(120, 95, 40, .05); }
 .wiki-foot a:hover { text-decoration: underline; }
 
 /* ---------- 疆域变迁地图 ---------- */
-.map-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 14px 0;
-  /* 吸顶：滚动查看地图与说明时，时期切换栏始终跟随屏幕（紧贴主导航下方） */
-  position: sticky;
-  top: 60px;
-  z-index: 40;
-  padding: 8px 4px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--line);
-  box-shadow: 0 8px 16px -12px rgba(0, 0, 0, .55);
-}
-.map-nav-btn {
-  flex: 0 0 auto;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--ink-2);
-  background: var(--panel-2);
-  border: 1px solid rgba(128,128,128,.3);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color .15s, color .15s;
-}
-.map-nav-btn:hover { border-color: var(--gold); color: var(--gold); }
-.map-eras {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 4px 2px;
-  scrollbar-width: thin;
-}
-.map-era-btn {
-  flex: 0 0 auto;
-  padding: 5px 12px;
-  font-size: 12.5px;
-  font-family: inherit;
-  color: var(--ink-2);
-  background: transparent;
-  border: 1px solid rgba(128,128,128,.28);
-  border-radius: 20px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all .15s;
-}
-.map-era-btn:hover { border-color: var(--gold); color: var(--gold); }
-.map-era-btn.active {
   background: var(--gold);
   color: #16130b;
   border-color: var(--gold);
@@ -1037,6 +988,7 @@ body.light .wiki-foot { background: rgba(120, 95, 40, .05); }
   gap: 4px;
 }
 .map-timeline .mtl-row { display: flex; align-items: center; gap: 10px; }
+.map-timeline .map-battle-switch { flex: 0 0 auto; margin-left: 4px; }
 .map-timeline .mtl-stack { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .mtl-play {
   flex: 0 0 auto;
@@ -1132,9 +1084,7 @@ body.light .wiki-foot { background: rgba(120, 95, 40, .05); }
 }
 
 @media (max-width: 720px) {
-  .map-toolbar { flex-direction: column; align-items: stretch; }
-  .map-nav-btn { width: 100%; }
-  .china-map { height: 400px; }
+      .china-map { height: 400px; }
 }
 
 /* 生平档案卡 */

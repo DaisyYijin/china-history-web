@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>中国通史 · 大事年表与人物图谱（远古 — 当代）</title>
-<link rel="stylesheet" href="css/bundle.css?v=2.42.0">
+<link rel="stylesheet" href="css/bundle.css?v=2.42.1">
   <meta name="description" content="中华上下五千年：大事年表、战役兵力对比、历代人物志与人物关系图谱。从炎黄传说到新时代。">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#f4ecd9">
@@ -110,12 +110,6 @@
         <h2>疆域变迁</h2>
         <p>十六个时期，一张地图看中国疆域的伸缩与分合</p>
       </div>
-      <div class="map-toolbar">
-        <button class="map-nav-btn" id="map-prev" aria-label="上一时期">‹ 上一时期</button>
-        <div class="map-eras" id="map-eras"></div>
-        <button class="map-nav-btn" id="map-next" aria-label="下一时期">下一时期 ›</button>
-        <label class="switch map-battle-switch"><input type="checkbox" id="toggle-map-battles" checked><span>⚔ 显示战役</span></label>
-      </div>
       <div id="china-map" class="china-map"></div>
       <div class="map-timeline" id="map-timeline">
         <div class="mtl-row">
@@ -124,6 +118,7 @@
             <div class="mtl-track" id="mtl-track"></div>
             <div class="mtl-labels" id="mtl-labels"></div>
           </div>
+          <label class="switch map-battle-switch"><input type="checkbox" id="toggle-map-battles" checked><span>⚔ 战役</span></label>
         </div>
       </div>
       <div class="map-info" id="map-info"></div>
@@ -158,6 +153,6 @@
     </div>
   </div>
 
-<script defer src="js/bundle.js?v=2.42.0"></script>
+<script defer src="js/bundle.js?v=2.42.1"></script>
 </body>
 </html>

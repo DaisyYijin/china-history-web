@@ -1157,7 +1157,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.42.0", build: 1790863547 };
+const CURRENT_VERSION = { version: "2.42.1", build: 1790863790 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1493,7 +1493,7 @@ function initPeriodMap() {
 
 function renderMapEras() {
   const box = document.getElementById("map-eras");
-  if (!box) return;
+  if (!box) return;  // 时期按钮条已并入时间线，此函数保留为空操作
   box.innerHTML = Object.keys(PERIODS).map(pk =>
     `<button class="map-era-btn ${String(pk) === String(mapCurrentPk) ? "active" : ""}" data-pk="${pk}" title="${esc(PERIODS[pk].sub)}">${esc(PERIODS[pk].name)}</button>`
   ).join("");
