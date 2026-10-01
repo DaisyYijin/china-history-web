@@ -1157,7 +1157,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.39.10", build: 1790861494 };
+const CURRENT_VERSION = { version: "2.40.0", build: 1790861968 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1550,7 +1550,7 @@ function renderPeriodMap() {
           lineStyle: { color: r.color, width: 3, type: r.dash ? "dashed" : "solid", opacity: .75 } }))
       }] : []),
       ...(cfg.bounds && cfg.bounds.length ? (() => {
-        const boundData = cfg.bounds.map(b => ({ name: b.name, pts: b.pts, pol: b.pol, lost: b.lost }));
+        const boundData = cfg.bounds.map(b => ({ name: b.name, pts: b.pts, arc: b.arc, pol: b.pol, lost: b.lost }));
         const centroid = pts => {
           const c = pts.reduce((s, p) => [s[0] + p[0], s[1] + p[1]], [0, 0]);
           return [c[0] / pts.length, c[1] / pts.length];
@@ -1565,9 +1565,20 @@ function renderPeriodMap() {
               if (!d || !d.pts || !d.pts.length) return null;
               const pts = d.pts.map(pt => api.coord(pt));
               const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
+              if (d.arc) {
+                // 贴边型：贴边侧与底图共用同一条省界折线——填充不描边（借底图边界线），
+                // 仅历史外弧单独描线，两线相接处零缝隙
+                const arcPts = d.arc.map(pt => api.coord(pt));
+                return { type: "group", children: [
+                  { type: "polygon", shape: { points: pts },
+                    style: { fill: polColor, opacity: .22 } },
+                  { type: "polyline", shape: { points: arcPts },
+                    style: { stroke: polColor, lineWidth: 1.4 } }
+                ] };
+              }
               return {
                 type: "polygon",
-                shape: { points: pts, smooth: .12 },
+                shape: { points: pts },
                 style: d.lost
                   ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
                       lineDash: [7, 5], opacity: .95 }

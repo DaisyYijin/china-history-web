@@ -71,12 +71,12 @@ function thin(pts, min = 0.18) {
 const nm = ringsOf(byName["内蒙古"]).reduce((a, b) => b.length > a.length ? b : a);
 const hlj = ringsOf(byName["黑龙江"]).reduce((a, b) => b.length > a.length ? b : a);
 
-// 中蒙界：额济纳西端(97.2,42.7) → 满洲里(117.8,49.6)，取平均纬度更高（北缘）的弧
-const mongoliaSouth = thin(arcBetween(nm, [97.2, 42.7], [117.8, 49.6],
-  (f, b) => f.reduce((s, p) => s + p[1], 0) / f.length > b.reduce((s, p) => s + p[1], 0) / b.length));
-// 黑龙江江防+乌苏里江沿界：漠河(122.4,53.4) → 省界东南角(131.2,44.0)，取平均经度更大（东缘）的弧
-const amurArc = thin(arcBetween(hlj, [122.4, 53.4], [131.2, 44.0],
-  (f, b) => f.reduce((s, p) => s + p[0], 0) / f.length > b.reduce((s, p) => s + p[0], 0) / b.length));
+// 中蒙界：额济纳西端(97.2,42.7) → 满洲里(117.8,49.6)，取平均纬度更高（北缘）的弧（不抽稀）
+const mongoliaSouth = arcBetween(nm, [97.2, 42.7], [117.8, 49.6],
+  (f, b) => f.reduce((s, p) => s + p[1], 0) / f.length > b.reduce((s, p) => s + p[1], 0) / b.length);
+// 黑龙江江防+乌苏里江沿界：漠河(122.4,53.4) → 省界东南角(131.2,44.0)，取平均经度更大（东缘）的弧（不抽稀）
+const amurArc = arcBetween(hlj, [122.4, 53.4], [131.2, 44.0],
+  (f, b) => f.reduce((s, p) => s + p[0], 0) / f.length > b.reduce((s, p) => s + p[0], 0) / b.length);
 
 fs.writeFileSync(path.join(__dirname, "out-overlays.json"),
   JSON.stringify({ mongoliaSouth, amurArc }, null, 1));
