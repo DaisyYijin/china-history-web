@@ -17876,7 +17876,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.41.0", build: 1790863138 };
+const CURRENT_VERSION = { version: "2.42.0", build: 1790863547 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18143,6 +18143,54 @@ var mapCurrentPk = 4;
 const MAP_DIM = () => (document.body.classList.contains("light") ? "#e8e2d2" : "#272c38");
 const MAP_DIM_LINE = () => (document.body.classList.contains("light") ? "rgba(90,80,60,.35)" : "rgba(255,255,255,.08)");
 
+/* ---------- 疆域时间线导航：16 时期条 + 自动演进 ---------- */
+var _mapPlayTimer = null;
+function buildMapTimeline() {
+  const track = document.getElementById("mtl-track");
+  const labels = document.getElementById("mtl-labels");
+  if (!track) return;
+  if (track.dataset.built === "1") { updateMapTimeline(); return; }
+  track.dataset.built = "1";
+  const keys = Object.keys(PERIODS);
+  track.innerHTML = keys.map(pk => {
+    const cfg = PERIOD_MAPS[pk] || {};
+    const pol = cfg.polities ? Object.values(cfg.polities)[0] : null;
+    const color = pol ? pol.color : "#8a7a5c";
+    return `<button class="mtl-seg" data-pk="${pk}" title="${esc(PERIODS[pk].name)} ${esc(cfg.years || "")}" style="background:${color}">
+      <span>${esc(PERIODS[pk].name)}</span></button>`;
+  }).join("");
+  track.querySelectorAll(".mtl-seg").forEach(b => {
+    b.onclick = () => { stopMapPlay(); setMapPk(+b.dataset.pk); };
+  });
+  labels.innerHTML = keys.map(pk => (PERIOD_MAPS[pk] ? PERIOD_MAPS[pk].years.split("—")[0].trim() : ""))
+    .concat(["今"]).map(t => `<i>${esc(t)}</i>`).join("");
+  updateMapTimeline();
+}
+function updateMapTimeline() {
+  document.querySelectorAll(".mtl-seg").forEach(b =>
+    b.classList.toggle("active", +b.dataset.pk === mapCurrentPk));
+}
+function setMapPk(pk) {
+  mapCurrentPk = ((pk - 1 + 16) % 16) + 1;
+  renderPeriodMap(); renderMapEras(); updateMapTimeline();
+}
+function stopMapPlay() {
+  if (!_mapPlayTimer) return;
+  clearInterval(_mapPlayTimer); _mapPlayTimer = null;
+  const btn = document.getElementById("map-play");
+  if (btn) { btn.textContent = "▶ 演进"; btn.classList.remove("playing"); }
+}
+(function bindMapPlay() {
+  const btn = document.getElementById("map-play");
+  if (!btn) return;
+  btn.onclick = () => {
+    if (_mapPlayTimer) { stopMapPlay(); return; }
+    btn.textContent = "⏸ 暂停"; btn.classList.add("playing");
+    setMapPk(mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1);
+    _mapPlayTimer = setInterval(() => setMapPk(mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1), 2600);
+  };
+})();
+
 function initPeriodMap() {
   const el = document.getElementById("china-map");
   if (!el || typeof echarts === "undefined") return;
@@ -18151,17 +18199,12 @@ function initPeriodMap() {
   const nextBtn = document.getElementById("map-next");
   const battleToggle = document.getElementById("toggle-map-battles");
   if (battleToggle) battleToggle.onchange = () => renderPeriodMap();
-  if (prevBtn) prevBtn.onclick = () => {
-    mapCurrentPk = mapCurrentPk <= 1 ? 16 : mapCurrentPk - 1;
-    renderPeriodMap(); renderMapEras();
-  };
-  if (nextBtn) nextBtn.onclick = () => {
-    mapCurrentPk = mapCurrentPk >= 16 ? 1 : mapCurrentPk + 1;
-    renderPeriodMap(); renderMapEras();
-  };
+  if (prevBtn) prevBtn.onclick = () => { stopMapPlay(); setMapPk(mapCurrentPk - 1); };
+  if (nextBtn) nextBtn.onclick = () => { stopMapPlay(); setMapPk(mapCurrentPk + 1); };
   periodMapChart = echarts.init(el);
   renderMapEras();
   try { renderPeriodMap(); } catch (e) { /* 首次渲染失败不阻断交互，切换时期即恢复 */ }
+  buildMapTimeline();
   periodMapChart.on("click", p => {
     if (p.seriesType === "effectScatter" && p.data && p.data.eid) openEvent(p.data.eid);
   });
@@ -18174,7 +18217,7 @@ function renderMapEras() {
     `<button class="map-era-btn ${String(pk) === String(mapCurrentPk) ? "active" : ""}" data-pk="${pk}" title="${esc(PERIODS[pk].sub)}">${esc(PERIODS[pk].name)}</button>`
   ).join("");
   box.querySelectorAll(".map-era-btn").forEach(b => {
-    b.onclick = () => { mapCurrentPk = +b.dataset.pk; renderPeriodMap(); renderMapEras(); };
+    b.onclick = () => { stopMapPlay(); setMapPk(+b.dataset.pk); };
   });
   const cur = box.querySelector(".map-era-btn.active");
   if (cur) cur.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });

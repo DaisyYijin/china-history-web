@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>中国通史 · 大事年表与人物图谱（远古 — 当代）</title>
-<link rel="stylesheet" href="css/bundle.css?v=2.41.0">
+<link rel="stylesheet" href="css/bundle.css?v=2.42.0">
   <meta name="description" content="中华上下五千年：大事年表、战役兵力对比、历代人物志与人物关系图谱。从炎黄传说到新时代。">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#f4ecd9">
@@ -117,6 +117,15 @@
         <label class="switch map-battle-switch"><input type="checkbox" id="toggle-map-battles" checked><span>⚔ 显示战役</span></label>
       </div>
       <div id="china-map" class="china-map"></div>
+      <div class="map-timeline" id="map-timeline">
+        <div class="mtl-row">
+          <button class="mtl-play" id="map-play" title="自动播放疆域变迁" aria-label="播放演进">▶ 演进</button>
+          <div class="mtl-stack">
+            <div class="mtl-track" id="mtl-track"></div>
+            <div class="mtl-labels" id="mtl-labels"></div>
+          </div>
+        </div>
+      </div>
       <div class="map-info" id="map-info"></div>
       <p class="map-note">※ 示意地图：以当代中国疆域为底图，以今省域为单位粗略着色，历史边界与政区为约数；
       域外政权仅作文字标注。内容仅作历史教学示意，不代表任何现实主张。</p>
@@ -149,6 +158,6 @@
     </div>
   </div>
 
-<script defer src="js/bundle.js?v=2.41.0"></script>
+<script defer src="js/bundle.js?v=2.42.0"></script>
 </body>
 </html>
