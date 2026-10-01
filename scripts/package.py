@@ -1,54 +1,75 @@
 # -*- coding: utf-8 -*-
 """
-打包静态站点为 dist.zip —— 用于国内静态托管的「上传 ZIP」部署
-（腾讯 EdgeOne Pages / 阿里云 OSS / 腾讯云 COS 均支持 ZIP 或解压上传）
+打包静态站点：同步 dist/ 目录 + 生成 dist.zip
+
+自 v2.34.0 起站点为单文件形态（js/bundle.js + css/bundle.css，
+由 scripts/build-bundle.py 生成），dist/ 仅含 7 个文件，
+弱网一次请求即可载完全部数据。
 
 用法：python scripts/package.py
-输出：项目根目录 dist.zip
 """
-import os
 import io
 import json
+import os
+import re
+import shutil
+import subprocess
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIST = os.path.join(ROOT, "dist")
 OUT = os.path.join(ROOT, "dist.zip")
 
-INCLUDE_DIRS = ["css", "js", "lib"]
-INCLUDE_FILES = ["index.html", "version.json", "sw.js", "manifest.webmanifest", "icon.svg"]
-EXCLUDE_JS_PREFIXES = ("_",)  # 临时校验文件
+FILES = [
+    "index.html",
+    "version.json",
+    "sw.js",
+    "manifest.webmanifest",
+    "icon.svg",
+    "js/bundle.js",
+    "css/bundle.css",
+]
+
 
 def main():
+    # 1. 先重建 bundle（保证与源文件同步）
+    subprocess.run(
+        ["python", os.path.join(ROOT, "scripts", "build-bundle.py")],
+        check=True, cwd=ROOT)
+
+    missing = [f for f in FILES if not os.path.exists(os.path.join(ROOT, f))]
+    if missing:
+        raise SystemExit("缺少文件: %s" % missing)
+
+    # 2. 注入 SW 预缓存清单（先改 sw.js 再复制，保证 dist 内外一致）
+    swp = os.path.join(ROOT, "sw.js")
+    sw = io.open(swp, encoding="utf-8").read()
+    data = ["./js/bundle.js", "./css/bundle.css"]
+    sw = re.sub(r"const DATA = \[[^\]]*\];",
+                "const DATA = " + json.dumps(data) + ";", sw)
+    io.open(swp, "w", encoding="utf-8", newline="\n").write(sw)
+
+    # 3. 清空并重建 dist/
+    if os.path.isdir(DIST):
+        shutil.rmtree(DIST)
+    os.makedirs(os.path.join(DIST, "js"))
+    os.makedirs(os.path.join(DIST, "css"))
+    for f in FILES:
+        dst = os.path.join(DIST, f)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(os.path.join(ROOT, f), dst)
+
+    # 4. dist.zip
     if os.path.exists(OUT):
         os.remove(OUT)
-    n = 0
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in INCLUDE_FILES:
-            p = os.path.join(ROOT, f)
-            if os.path.exists(p):
-                z.write(p, f); n += 1
-        js_list = []
-        for d in INCLUDE_DIRS:
-            dp = os.path.join(ROOT, d)
-            for base, _, files in os.walk(dp):
-                for fn in files:
-                    if d == "js" and fn.startswith(EXCLUDE_JS_PREFIXES):
-                        continue
-                    full = os.path.join(base, fn)
-                    rel = os.path.relpath(full, ROOT).replace("\\", "/")
-                    z.write(full, rel); n += 1
-                    if d == "js":
-                        js_list.append("./js/" + fn)
-        # SW 数据预缓存清单：全部 js（第二次访问零等待）
-        swp = os.path.join(ROOT, "sw.js")
-        if os.path.exists(swp):
-            sw = io.open(swp, encoding="utf-8").read()
-            import re as _re
-            sw = _re.sub(r"const DATA = \[[^\]]*\];",
-                         "const DATA = " + json.dumps(sorted(set(js_list))).replace("\"", "\"") + ";", sw)
-            io.open(swp, "w", encoding="utf-8").write(sw)
-    size = os.path.getsize(OUT) / 1024
-    print(f"已打包 {n} 个文件 -> dist.zip（{size:.0f} KB）")
+        for f in FILES:
+            z.write(os.path.join(ROOT, f), f)
+
+    size = sum(os.path.getsize(os.path.join(DIST, f)) for f in FILES) / 1024
+    print("dist/ 已同步 %d 个文件（%.0f KB）；dist.zip %.0f KB"
+          % (len(FILES), size, os.path.getsize(OUT) / 1024))
+
 
 if __name__ == "__main__":
     main()

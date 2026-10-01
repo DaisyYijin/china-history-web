@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "ali-oss": "^6.23.0",
+    "edgeone": "^1.6.41",
     "surge": "^0.24.6"
   }
 }

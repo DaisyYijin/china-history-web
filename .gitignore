@@ -8,3 +8,9 @@ dist.zip
 _*.js
 _*.txt
 scripts/oss-config.json
+
+# Tencent Cloud EdgeOne
+.env
+.edgeone/*
+.tef_dist/*
+  
