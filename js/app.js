@@ -375,7 +375,7 @@ function renderPeopleGrid() {
   grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
     return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}" style="--pc:${f.color}">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(avatarChars(p.name))}</div>
       <div class="p-name">${esc(p.name)}</div>
       <div class="p-life">${esc(p.life)}</div>
       <div class="p-title">${esc(p.title)}</div>
@@ -706,7 +706,7 @@ function openPerson(id) {
   const _html = _personHtmlCache.get(_cacheKey) || (() => {
     const html = `
     <div class="person-head">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(avatarChars(p.name))}</div>
       <div class="p-meta">
         <h3>${esc(p.name)}</h3>
         <div class="p-life">${esc(p.life)}</div>
@@ -1178,7 +1178,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.47.2", build: 1790866690 };
+const CURRENT_VERSION = { version: "2.48.1", build: 1790867044 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

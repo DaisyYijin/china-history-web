@@ -16191,6 +16191,22 @@ Object.assign(PEOPLE, {
 });
 
 ;
+/* ===================== js/portraits.js ===================== */
+/* =========================================================
+ * 人物画像索引
+ * 画像文件放 img/p/{人物id}.jpg（或 .png/.webp），在此登记后
+ * 人物志卡片与简介弹窗的头像将显示画像（印章框保留作边框），
+ * 图片缺失/加载失败自动回退为印章字。
+ * 批量抓取：node scripts/fetch-portraits.js（维基百科，需可访问网络）
+ * ========================================================= */
+
+const PORTRAITS = {
+  /* 示例：
+  "libai": "img/p/libai.jpg",
+  "qinshihuang": "img/p/qinshihuang.jpg" */
+};
+
+;
 /* ===================== js/period-map.js ===================== */
 /* =========================================================
  * 疆域变迁示意地图数据（16 个时期）
@@ -17094,7 +17110,7 @@ function renderPeopleGrid() {
   grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
     return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}" style="--pc:${f.color}">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(avatarChars(p.name))}</div>
       <div class="p-name">${esc(p.name)}</div>
       <div class="p-life">${esc(p.life)}</div>
       <div class="p-title">${esc(p.title)}</div>
@@ -17425,7 +17441,7 @@ function openPerson(id) {
   const _html = _personHtmlCache.get(_cacheKey) || (() => {
     const html = `
     <div class="person-head">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}">${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(avatarChars(p.name))}</div>
       <div class="p-meta">
         <h3>${esc(p.name)}</h3>
         <div class="p-life">${esc(p.life)}</div>
@@ -17897,7 +17913,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.47.2", build: 1790866690 };
+const CURRENT_VERSION = { version: "2.48.1", build: 1790867044 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

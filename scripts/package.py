@@ -30,6 +30,11 @@ FILES = [
     "css/bundle.css",
 ]
 
+def extra_files():
+    """img/p/ 下的画像（存在才打包）"""
+    import glob
+    return [f.replace("\\", "/") for f in glob.glob("img/p/*") if "/" in f]
+
 
 def main():
     # 1. 先重建 bundle（保证与源文件同步）
@@ -37,6 +42,7 @@ def main():
         ["python", os.path.join(ROOT, "scripts", "build-bundle.py")],
         check=True, cwd=ROOT)
 
+    FILES.extend(extra_files())
     missing = [f for f in FILES if not os.path.exists(os.path.join(ROOT, f))]
     if missing:
         raise SystemExit("缺少文件: %s" % missing)

@@ -135,6 +135,13 @@ body.light .m-toc { background: linear-gradient(180deg, var(--panel) 82%, transp
   text-shadow: 0 1px 0 rgba(0,0,0,.18);
 }
 .p-card .avatar[data-two], .person-head .avatar[data-two] { font-size: .72em; letter-spacing: .02em; }
+.p-card .avatar img, .person-head .avatar img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.p-card .avatar img ~ *, .person-head .avatar img ~ * {}
 .p-card .avatar::after, .person-head .avatar::after {
   content: "";
   position: absolute; inset: 3px;
