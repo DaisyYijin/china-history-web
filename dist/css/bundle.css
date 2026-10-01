@@ -354,8 +354,7 @@ body {
   width: 34px; height: 34px;
   border: 1px solid var(--line);
   border-radius: 50%;
-  background: rgba(10, 12, 18, .88);
-  backdrop-filter: blur(4px);
+  background: rgba(10, 12, 18, .94);
   color: var(--muted); font-size: 15px;
   cursor: pointer;
 }

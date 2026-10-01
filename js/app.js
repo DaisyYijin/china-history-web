@@ -615,6 +615,7 @@ function injectModalToc() {
   modalBody.prepend(nav);
 }
 
+var _personHtmlCache = new Map();
 function openPerson(id) {
   const p = PERSON_MAP[id];
   if (!p) return;
@@ -690,7 +691,9 @@ function openPerson(id) {
        <div id="mini-graph"></div>
        <div class="chips" style="margin-top:12px">${relChips}</div>`
     : "";
-  modalBody.innerHTML = `
+  const _cacheKey = id + "|" + (document.body.classList.contains("light") ? "l" : "d");
+  const _html = _personHtmlCache.get(_cacheKey) || (() => {
+    const html = `
     <div class="person-head">
       <div class="avatar" style="--ac:${f.color};color:${f.color};border-color:${f.color}">${esc(p.name[0])}</div>
       <div class="p-meta">
@@ -713,6 +716,11 @@ function openPerson(id) {
     <div class="chips">${evChips || '<span style="color:var(--muted);font-size:13.5px">未直接参与收录事件，主要事迹见上方生平</span>'}</div>
     ${relSection}
     ${wikiSection}`;
+    if (_personHtmlCache.size > 150) _personHtmlCache.clear();
+    _personHtmlCache.set(_cacheKey, html);
+    return html;
+  })();
+  modalBody.innerHTML = _html;
   injectModalToc();
   openModal();
   modalBody.scrollTop = 0;
@@ -754,10 +762,12 @@ function renderMiniGraph(centerId, color) {
       }
     },
     series: [{
-      type: "graph", layout: "force", roam: true,
-      force: { repulsion: 420, edgeLength: 110, gravity: .12 },
-      data: nodes.map(n => ({
+      // 静态环形布局：力导向模拟在弱机上持续占用 CPU 造成卡顿，改为一次性定位
+      type: "graph", layout: "none", roam: true,
+      data: nodes.map((n, idx) => ({
         id: n.id, name: n.name,
+        x: n.center ? 0 : Math.cos(idx / Math.max(1, nodes.length - 1) * Math.PI * 2) * 170,
+        y: n.center ? 0 : Math.sin(idx / Math.max(1, nodes.length - 1) * Math.PI * 2) * 130,
         symbolSize: n.center ? 52 : 34,
         itemStyle: n.center
           ? { color, borderColor: "#d3a94f", borderWidth: 2, shadowBlur: 16, shadowColor: color }
@@ -1157,7 +1167,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.45.0", build: 1790865478 };
+const CURRENT_VERSION = { version: "2.46.1", build: 1790865919 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
