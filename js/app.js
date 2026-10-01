@@ -1157,7 +1157,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.42.2", build: 1790864099 };
+const CURRENT_VERSION = { version: "2.43.0", build: 1790864295 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1550,7 +1550,92 @@ function renderPeriodMap() {
              formatter: name }
   }));
 
-  periodMapChart.setOption({
+  const boundsPair = (cfg.bounds && cfg.bounds.length) ? (() => {
+    const boundData = cfg.bounds.map(b => ({ name: b.name, pts: b.pts, arc: b.arc, pol: b.pol, lost: b.lost }));
+    const centroid = pts => {
+      const c = pts.reduce((s, p) => [s[0] + p[0], s[1] + p[1]], [0, 0]);
+      return [c[0] / pts.length, c[1] / pts.length];
+    };
+    return [
+      {
+        id: "bounds", type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
+        data: boundData,
+        renderItem: (params, api) => {
+          // echarts 规范：custom series 通过 dataIndex 取数据项（params.data 不保证存在）
+          const d = boundData[params.dataIndex];
+          if (!d || !d.pts || !d.pts.length) return null;
+          const pts = d.pts.map(pt => api.coord(pt));
+          const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
+          // 注意：不可用 group 嵌套（echarts 5.5.1 custom series 的子元素样式会丢失→实心黑块），
+          // 单多边形 + 全量贴边点 + 零平滑即可与底图省界逐像素重合
+          return {
+            type: "polygon",
+            shape: { points: pts },
+            style: d.lost
+              ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
+                  lineDash: [7, 5], opacity: .95 }
+              : { fill: polColor, opacity: .22, stroke: polColor, lineWidth: 1.2 }
+          };
+        }
+      },
+      {
+        // 疆域色块中央的名称标注（走 echarts 原生 label，稳定可靠）
+        id: "boundsLabel", type: "scatter", coordinateSystem: "geo", zlevel: 4, silent: true,
+        symbolSize: 1, itemStyle: { color: "rgba(0,0,0,0)" },
+        data: boundData.filter(b => b.name).map(b => ({
+          name: b.name, value: centroid(b.pts),
+          label: { color: b.lost ? "#c05050" : (polities[b.pol] ? polities[b.pol].color : "#b0553c") }
+        })),
+        label: {
+          show: true, position: "inside", lineHeight: 15,
+          formatter: p => { const n = p.name, i = n.indexOf("（");
+            return i > 0 ? n.slice(0, i) + "\n" + n.slice(i) : n; },
+          fontFamily: "serif", fontWeight: 700, fontSize: 12,
+          textBorderColor: MAP_DIM(), textBorderWidth: 3
+        },
+        labelLayout: { hideOverlap: true }
+      }
+    ];
+  })() : [
+    { id: "bounds", type: "custom", coordinateSystem: "geo", zlevel: 3, data: [] },
+    { id: "boundsLabel", type: "scatter", coordinateSystem: "geo", zlevel: 4, silent: true, data: [] }
+  ];
+
+  // 合并更新（非 notMerge）：echarts 对省份颜色等做插值动画，时期切换/演进播放时疆域平滑渐变；
+  // 系列全部持有稳定 id 且恒在（空数据占位），避免按索引错配与残留
+  const firstMapRender = !periodMapChart.__eraReady;
+  periodMapChart.setOption(Object.assign({
+    animationDurationUpdate: 750,
+    animationEasingUpdate: "cubicInOut",
+    series: [
+      { id: "prov", type: "map", map: "china", geoIndex: 0, data },
+      { id: "caps", type: "scatter", coordinateSystem: "geo", data: caps,
+        zlevel: 2, silent: false, labelLayout: { hideOverlap: true } },
+      { id: "battles", type: "effectScatter", coordinateSystem: "geo", zlevel: 4,
+        rippleEffect: { brushType: "stroke", scale: 3.2 },
+        symbolSize: 11,
+        itemStyle: { color: "#e05545", shadowBlur: 8, shadowColor: "rgba(224,85,69,.8)" },
+        // 名称默认不显示（避免与疆域/都城标注重叠），悬停显示
+        emphasis: { label: { show: true } },
+        labelLayout: { hideOverlap: true },
+        label: { show: false },
+        data: (showBattles ? battleEvents : []).map(ev => ({
+          name: ev.title, value: BATTLE_COORDS[ev.id], eid: ev.id, year: ev.year,
+          label: { show: false, position: "right", fontSize: 11, fontWeight: 700, fontFamily: "serif",
+                   color: "#ffd9c9",
+                   textBorderColor: "rgba(16,19,25,.9)", textBorderWidth: 2.5,
+                   formatter: ev.title.length > 12 ? ev.title.slice(0, 11) + "…" : ev.title }
+        }))
+      },
+      { id: "routes", type: "lines", coordinateSystem: "geo", zlevel: 3, polyline: true, silent: true,
+        lineStyle: { opacity: .8 },
+        data: routes.map(r => ({ name: r.name,
+          coords: r.coords,
+          lineStyle: { color: r.color, width: 3, type: r.dash ? "dashed" : "solid", opacity: .75 } }))
+      },
+      boundsPair[0], boundsPair[1]
+    ]
+  }, firstMapRender ? {
     tooltip: {
       backgroundColor: cssVar("--panel-2") || "rgba(18,21,30,.94)",
       borderColor: "rgba(211,169,79,.5)",
@@ -1569,85 +1654,10 @@ function renderPeriodMap() {
       regions,
       label: { show: false },
       select: { disabled: true }
-    },
-    series: [
-      { type: "map", map: "china", geoIndex: 0, data },
-      { type: "scatter", coordinateSystem: "geo", data: caps,
-        zlevel: 2, silent: false, labelLayout: { hideOverlap: true } },
-      ...(showBattles ? [{
-        type: "effectScatter", coordinateSystem: "geo", zlevel: 4,
-        rippleEffect: { brushType: "stroke", scale: 3.2 },
-        symbolSize: 11,
-        itemStyle: { color: "#e05545", shadowBlur: 8, shadowColor: "rgba(224,85,69,.8)" },
-        // 名称默认不显示（避免与疆域/都城标注重叠），悬停显示
-        emphasis: { label: { show: true } },
-        labelLayout: { hideOverlap: true },
-        label: { show: false },
-        data: battleEvents.map(ev => ({
-          name: ev.title, value: BATTLE_COORDS[ev.id], eid: ev.id, year: ev.year,
-          label: { show: false, position: "right", fontSize: 11, fontWeight: 700, fontFamily: "serif",
-                   color: "#ffd9c9",
-                   textBorderColor: "rgba(16,19,25,.9)", textBorderWidth: 2.5,
-                   formatter: ev.title.length > 12 ? ev.title.slice(0, 11) + "…" : ev.title }
-        }))
-      }] : []),
-      ...(routes.length ? [{
-        type: "lines", coordinateSystem: "geo", zlevel: 3, polyline: true, silent: true,
-        lineStyle: { opacity: .8 },
-        data: routes.map(r => ({ name: r.name,
-          coords: r.coords,
-          lineStyle: { color: r.color, width: 3, type: r.dash ? "dashed" : "solid", opacity: .75 } }))
-      }] : []),
-      ...(cfg.bounds && cfg.bounds.length ? (() => {
-        const boundData = cfg.bounds.map(b => ({ name: b.name, pts: b.pts, arc: b.arc, pol: b.pol, lost: b.lost }));
-        const centroid = pts => {
-          const c = pts.reduce((s, p) => [s[0] + p[0], s[1] + p[1]], [0, 0]);
-          return [c[0] / pts.length, c[1] / pts.length];
-        };
-        return [
-          {
-            type: "custom", coordinateSystem: "geo", zlevel: 3, clip: false, silent: false,
-            data: boundData,
-            renderItem: (params, api) => {
-              // echarts 规范：custom series 通过 dataIndex 取数据项（params.data 不保证存在）
-              const d = boundData[params.dataIndex];
-              if (!d || !d.pts || !d.pts.length) return null;
-              const pts = d.pts.map(pt => api.coord(pt));
-              const polColor = d.pol && polities[d.pol] ? polities[d.pol].color : "#b0553c";
-              // 注意：不可用 group 嵌套（echarts 5.5.1 custom series 的子元素样式会丢失→实心黑块），
-              // 单多边形 + 全量贴边点 + 零平滑即可与底图省界逐像素重合
-              return {
-                type: "polygon",
-                shape: { points: pts },
-                style: d.lost
-                  ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
-                      lineDash: [7, 5], opacity: .95 }
-                  : { fill: polColor, opacity: .22, stroke: polColor, lineWidth: 1.2 }
-              };
-            }
-          },
-          {
-            // 疆域色块中央的名称标注（走 echarts 原生 label，稳定可靠）
-            type: "scatter", coordinateSystem: "geo", zlevel: 4, silent: true,
-            symbolSize: 1, itemStyle: { color: "rgba(0,0,0,0)" },
-            data: boundData.filter(b => b.name).map(b => ({
-              name: b.name, value: centroid(b.pts),
-              label: { color: b.lost ? "#c05050" : (polities[b.pol] ? polities[b.pol].color : "#b0553c") }
-            })),
-            label: {
-              show: true, position: "inside", lineHeight: 15,
-              // 长名拆两行：主名 + 括号说明，减少横向占地与重叠
-              formatter: p => { const n = p.name, i = n.indexOf("（");
-                return i > 0 ? n.slice(0, i) + "\n" + n.slice(i) : n; },
-              fontFamily: "serif", fontWeight: 700, fontSize: 12,
-              textBorderColor: MAP_DIM(), textBorderWidth: 3
-            },
-            labelLayout: { hideOverlap: true }
-          }
-        ];
-      })() : [])
-    ]
-  }, true);
+    }
+  } : { geo: { regions } }));
+  periodMapChart.__eraReady = true;
+
 
   const legendHtml = Object.entries(polities).map(([k, v]) =>
     `<span class="map-leg"><i style="background:${v.color}"></i>${esc(v.name)}</span>`).join("");
