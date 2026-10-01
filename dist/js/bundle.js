@@ -16953,7 +16953,7 @@ function renderEraCards(ids) {
     const cat = CATS[ev.category];
     const forceLine = ev.forces ? `<div class="force-line">${ev.forces.map(f =>
       `<b>${esc(f.side)}</b>：${esc(f.troops)}`).join(" ｜ ")}</div>` : "";
-    html += `<div class="t-item" data-ev="${ev.id}" style="--cat:${cat.color}">
+    html += `<div class="t-item t-card" data-ev="${ev.id}" style="--cat:${cat.color}">
           <div class="t-head">
             <span class="t-tag" style="color:${cat.color}">${cat.name}</span>
           </div>
@@ -17870,7 +17870,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.39.7", build: 1790860711 };
+const CURRENT_VERSION = { version: "2.39.8", build: 1790860932 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
