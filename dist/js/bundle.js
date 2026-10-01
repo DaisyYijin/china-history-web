@@ -17876,7 +17876,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.43.0", build: 1790864295 };
+const CURRENT_VERSION = { version: "2.44.0", build: 1790864658 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18143,6 +18143,64 @@ var mapCurrentPk = 4;
 const MAP_DIM = () => (document.body.classList.contains("light") ? "#e8e2d2" : "#272c38");
 const MAP_DIM_LINE = () => (document.body.classList.contains("light") ? "rgba(90,80,60,.35)" : "rgba(255,255,255,.08)");
 
+/* ---------- 战争动画：按时序逐场点亮战役 + 线路流动 ---------- */
+function getPeriodBattles() {
+  return typeof BATTLE_COORDS === "undefined" ? [] :
+    EVENTS.filter(ev => ev.category === "war"
+      && (ev.p || periodOf(ev)) === mapCurrentPk
+      && BATTLE_COORDS[ev.id]);
+}
+function buildBattleItem(ev, showLabel) {
+  return {
+    name: ev.title, value: BATTLE_COORDS[ev.id], eid: ev.id, year: ev.year,
+    label: { show: !!showLabel, position: "right", fontSize: 11, fontWeight: 700, fontFamily: "serif",
+             color: "#ffd9c9",
+             textBorderColor: "rgba(16,19,25,.9)", textBorderWidth: 2.5,
+             formatter: ev.title.length > 12 ? ev.title.slice(0, 11) + "…" : ev.title }
+  };
+}
+var _warAnimTimer = null;
+function stopWarAnim(restore) {
+  if (_warAnimTimer) { clearInterval(_warAnimTimer); _warAnimTimer = null; }
+  const btn = document.getElementById("map-war-anim");
+  if (btn) btn.classList.remove("playing");
+  if (restore && periodMapChart) {
+    try {
+      periodMapChart.setOption({ series: [
+        { id: "routes", effect: { show: false } },
+        { id: "battles", data: getPeriodBattles().map(ev => buildBattleItem(ev, false)) }
+      ] });
+    } catch (e) {}
+  }
+}
+function playWarAnim() {
+  stopWarAnim(false);
+  const t = document.getElementById("toggle-map-battles");
+  if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change")); }
+  const btn = document.getElementById("map-war-anim");
+  if (btn) btn.classList.add("playing");
+  // 行军/征伐线路开启流动箭头
+  try {
+    periodMapChart.setOption({ series: [{ id: "routes",
+      effect: { show: true, period: 5, trailLength: .45, symbol: "arrow", symbolSize: 7 } }] });
+  } catch (e) {}
+  const list = getPeriodBattles().slice().sort((a, b) => a.year - b.year);
+  if (!list.length) { stopWarAnim(false); return; }
+  let i = 0;
+  const step = () => {
+    if (i >= list.length) { stopWarAnim(true); return; }  // 演完恢复常态
+    const shown = list.slice(0, ++i).map((ev, k) => buildBattleItem(ev, k === i - 1));
+    periodMapChart.setOption({ series: [{ id: "battles", data: shown }] });
+  };
+  step();
+  _warAnimTimer = setInterval(step, 1200);
+}
+(function bindWarAnim() {
+  const btn = document.getElementById("map-war-anim");
+  if (!btn) return;
+  btn.onclick = () => _warAnimTimer ? stopWarAnim(true) : playWarAnim();
+})();
+
 /* ---------- 疆域时间线导航：16 时期条 + 自动演进 ---------- */
 var _mapPlayTimer = null;
 function buildMapTimeline() {
@@ -18171,6 +18229,7 @@ function updateMapTimeline() {
     b.classList.toggle("active", +b.dataset.pk === mapCurrentPk));
 }
 function setMapPk(pk) {
+  stopWarAnim(false);
   mapCurrentPk = ((pk - 1 + 16) % 16) + 1;
   renderPeriodMap(); renderMapEras(); updateMapTimeline();
 }
@@ -18338,13 +18397,7 @@ function renderPeriodMap() {
         emphasis: { label: { show: true } },
         labelLayout: { hideOverlap: true },
         label: { show: false },
-        data: (showBattles ? battleEvents : []).map(ev => ({
-          name: ev.title, value: BATTLE_COORDS[ev.id], eid: ev.id, year: ev.year,
-          label: { show: false, position: "right", fontSize: 11, fontWeight: 700, fontFamily: "serif",
-                   color: "#ffd9c9",
-                   textBorderColor: "rgba(16,19,25,.9)", textBorderWidth: 2.5,
-                   formatter: ev.title.length > 12 ? ev.title.slice(0, 11) + "…" : ev.title }
-        }))
+        data: showBattles ? getPeriodBattles().map(ev => buildBattleItem(ev, false)) : []
       },
       { id: "routes", type: "lines", coordinateSystem: "geo", zlevel: 3, polyline: true, silent: true,
         lineStyle: { opacity: .8 },
