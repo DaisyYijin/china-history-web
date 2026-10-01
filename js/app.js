@@ -1112,7 +1112,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.36.3", build: 1790816937 };
+const CURRENT_VERSION = { version: "2.36.5", build: 1790829882 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1476,16 +1476,19 @@ function renderPeriodMap() {
     series: [
       { type: "map", map: "china", geoIndex: 0, data },
       { type: "scatter", coordinateSystem: "geo", data: caps,
-        zlevel: 2, silent: false },
+        zlevel: 2, silent: false, labelLayout: { hideOverlap: true } },
       ...(showBattles ? [{
         type: "effectScatter", coordinateSystem: "geo", zlevel: 4,
         rippleEffect: { brushType: "stroke", scale: 3.2 },
         symbolSize: 11,
         itemStyle: { color: "#e05545", shadowBlur: 8, shadowColor: "rgba(224,85,69,.8)" },
+        // 名称默认不显示（避免与疆域/都城标注重叠），悬停显示
+        emphasis: { label: { show: true } },
+        labelLayout: { hideOverlap: true },
         label: { show: false },
         data: battleEvents.map(ev => ({
           name: ev.title, value: BATTLE_COORDS[ev.id], eid: ev.id, year: ev.year,
-          label: { show: true, position: "right", fontSize: 11, fontWeight: 700, fontFamily: "serif",
+          label: { show: false, position: "right", fontSize: 11, fontWeight: 700, fontFamily: "serif",
                    color: "#ffd9c9",
                    textBorderColor: "rgba(16,19,25,.9)", textBorderWidth: 2.5,
                    formatter: ev.title.length > 12 ? ev.title.slice(0, 11) + "…" : ev.title }
@@ -1520,7 +1523,7 @@ function renderPeriodMap() {
                 style: d.lost
                   ? { fill: "rgba(150,40,40,.18)", stroke: "#c05050", lineWidth: 1.6,
                       lineDash: [7, 5], opacity: .95 }
-                  : { fill: polColor, opacity: .38, stroke: polColor, lineWidth: 1.6 }
+                  : { fill: polColor, opacity: .22, stroke: polColor, lineWidth: 1.2 }
               };
             }
           },
@@ -1533,8 +1536,11 @@ function renderPeriodMap() {
               label: { color: b.lost ? "#c05050" : (polities[b.pol] ? polities[b.pol].color : "#b0553c") }
             })),
             label: {
-              show: true, position: "inside", formatter: "{b}",
-              fontFamily: "serif", fontWeight: 700, fontSize: 12.5,
+              show: true, position: "inside", lineHeight: 15,
+              // 长名拆两行：主名 + 括号说明，减少横向占地与重叠
+              formatter: p => { const n = p.name, i = n.indexOf("（");
+                return i > 0 ? n.slice(0, i) + "\n" + n.slice(i) : n; },
+              fontFamily: "serif", fontWeight: 700, fontSize: 12,
               textBorderColor: MAP_DIM(), textBorderWidth: 3
             },
             labelLayout: { hideOverlap: true }
@@ -1547,7 +1553,7 @@ function renderPeriodMap() {
   const legendHtml = Object.entries(polities).map(([k, v]) =>
     `<span class="map-leg"><i style="background:${v.color}"></i>${esc(v.name)}</span>`).join("");
   const battleHtml = battleEvents.length
-    ? `<span class="map-leg"><i style="background:#e05545;border-radius:50%"></i>本时期战役 ${battleEvents.length} 场（点击标记查看详情）</span>` : "";
+    ? `<span class="map-leg"><i style="background:#e05545;border-radius:50%"></i>本时期战役 ${battleEvents.length} 场（悬停看名称 · 点击看详情）</span>` : "";
   const routeHtml = routes.map(r =>
     `<span class="map-leg"><i style="background:${r.color};height:4px;border-radius:2px;${r.dash ? "opacity:.85;" : ""}"></i>${esc(r.name)}</span>`).join("");
   const boundsHtml = (cfg.bounds || []).map(b =>
