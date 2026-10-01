@@ -16794,7 +16794,9 @@ document.getElementById("theme-toggle").onclick = () => {
 };
 
 /* ---------- 标签页 ---------- */
+var currentTab = "timeline-section";
 function switchTab(id, push) {
+  currentTab = id;
   TABS.forEach(s => {
     const el = document.getElementById(s);
     if (el) el.classList.toggle("tab-active", s === id);
@@ -17774,7 +17776,7 @@ function jumpToEra(pk) {
 })();
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.34.2", build: 1790815004 };
+const CURRENT_VERSION = { version: "2.35.0", build: 1790815311 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -18397,3 +18399,47 @@ if ("serviceWorker" in navigator &&
     (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
+
+/* ---------- 页面状态持久化：刷新后回到原位置 ----------
+   保存：当前标签页 / 滚动位置 / 疆域图时期 / 展开的朝代（sessionStorage，关标签页即清）
+   恢复：URL hash 优先（直达链接分享），无 hash 时用上次状态 */
+var PAGE_STATE_KEY = "shijian-state-v1";
+function savePageState() {
+  try {
+    sessionStorage.setItem(PAGE_STATE_KEY, JSON.stringify({
+      tab: currentTab || "timeline-section",
+      scroll: Math.round(window.scrollY),
+      mapPk: (typeof mapCurrentPk !== "undefined" && mapCurrentPk) || 4,
+      openEras: Array.from(openEras)
+    }));
+  } catch (e) { /* 隐私模式等存储不可用时静默降级 */ }
+}
+var _pageStateTimer = 0;
+window.addEventListener("scroll", () => {
+  if (_pageStateTimer) return;
+  _pageStateTimer = setTimeout(() => { _pageStateTimer = 0; savePageState(); }, 400);
+}, { passive: true });
+window.addEventListener("pagehide", savePageState);
+
+(function restorePageState() {
+  var st = null;
+  try { st = JSON.parse(sessionStorage.getItem(PAGE_STATE_KEY) || "null"); } catch (e) {}
+  if (!st) return;
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  // 疆域图时期：须在 initPeriodMap 延迟触发前恢复
+  if (st.mapPk >= 1 && st.mapPk <= 16) mapCurrentPk = st.mapPk;
+  // 展开的朝代
+  if (Array.isArray(st.openEras) && st.openEras.length) {
+    st.openEras.forEach(k => openEras.add(String(k)));
+    renderTimeline();
+  }
+  // 标签页：hash 直达优先，否则恢复上次
+  var h = (location.hash || "").replace("#", "");
+  if (!h && TABS.indexOf(st.tab) !== -1) switchTab(st.tab, false);
+  // 滚动位置：首屏渲染后校准一次，懒加载填充后再校准一次
+  var y = +st.scroll || 0;
+  if (y > 0) {
+    setTimeout(() => window.scrollTo({ top: y, behavior: "instant" }), 350);
+    setTimeout(() => window.scrollTo({ top: y, behavior: "instant" }), 1100);
+  }
+})();
