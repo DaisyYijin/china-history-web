@@ -7212,6 +7212,15 @@ Object.assign(PEOPLE_TIMELINE, {
  * ========================================================= */
 
 const GLOSSARY = {
+  /* 近代条约：正文首次出现时直接内联展示内容（见 INLINE_TERMS） */
+  "南京条约": "鸦片战争战败后与英国签订的近代第一个不平等条约：割香港岛、赔款2100万银元、开放广州厦门福州宁波上海五口通商",
+  "马关条约": "1895年甲午战败后与日本签订：割台湾及澎湖列岛、赔款2亿两白银、允许外国在华设厂，半殖民地化大大加深",
+  "辛丑条约": "1901年八国联军之役后签订：赔款4.5亿两白银（本息近10亿两）、划定东交民巷使馆界、拆毁大沽炮台，中国完全沦为半殖民地半封建社会",
+  "天津条约": "1858年第二次鸦片战争期间与英法签订：外国公使进驻北京、增开长江流域十口通商、赔款白银600万两",
+  "北京条约": "1860年第二次鸦片战争结束时签订：承认《天津条约》有效、割九龙司给英国、开天津为商埠，同年与俄签约又割走乌苏里江以东约40万平方公里",
+  "瑷珲条约": "1858年沙俄胁迫黑龙江将军奕山签订，割走黑龙江以北、外兴安岭以南约60万平方公里，是近代割地最多的条约",
+  "尼布楚条约": "1689年清俄经平等协商签订的边界条约，划定外兴安岭至鄂霍次克海的东段边界，维持了此后一百五十多年的和平",
+
   /* 政治制度 */
   "禅让": "首领把位子让给贤能的人，而不是传给自己的儿子。尧舜禹时期是这样，之后变成父子相传。",
   "世袭": "父亲的爵位、官职或王位由儿子继承，一代传一代。",
@@ -7360,6 +7369,12 @@ const GLOSSARY = {
   "国库": "国家的钱库。战争赔款都是国库出，赔空了就加税，最后转嫁到百姓头上。"
 
 };
+
+/* 重点词条：正文中首次出现时直接内联展示白话内容（不必点击）；
+   其余词条保持虚线下划线 + 点击弹解释。 */
+const INLINE_TERMS = [
+  "南京条约", "马关条约", "辛丑条约", "天津条约", "北京条约", "瑷珲条约", "尼布楚条约"
+];
 
 ;
 /* ===================== js/event-plain.js ===================== */
@@ -17409,18 +17424,28 @@ function esc(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
-/* 术语自动注释：正文中的词典词条加标记，点击弹大白话解释 */
+/* 术语自动注释：正文中的词典词条加标记，点击弹大白话解释；
+   重点词条（INLINE_TERMS，如各条约）首次出现直接内联展示内容 */
 let glossaryRegex = null;
 function glossarize(escapedText) {
   if (typeof GLOSSARY === "undefined" || !escapedText) return escapedText;
   try {
     if (!glossaryRegex) {
-      // 词典键均为中文词，无需正则转义；长词优先避免短词截断匹配
+      // 词典键均为中文词，无需正则转义；长词优先避免短词截断匹配；
+      // 可选的右书名号一并包进词条，内联注释才能落在《》之外
       const keys = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
-      glossaryRegex = new RegExp(keys.join("|"), "g");
+      glossaryRegex = new RegExp("(" + keys.join("|") + ")(》?)", "g");
     }
-    return escapedText.replace(glossaryRegex, m =>
-      `<span class="term" data-term="${m}">${m}</span>`);
+    const inlined = new Set();
+    return escapedText.replace(glossaryRegex, (m, key, bracket, offset, s) => {
+      const span = `<span class="term" data-term="${key}">${key}${bracket}</span>`;
+      if (typeof INLINE_TERMS === "undefined" || INLINE_TERMS.indexOf(key) < 0 || inlined.has(key)) return span;
+      // 正文紧接着「：」自行展开说明时（如条约事件的「结果」栏）不重复加注
+      const after = s.charAt(offset + m.length);
+      if (after === "：" || after === ":") return span;
+      inlined.add(key);
+      return span + `<span class="term-note">（${esc(GLOSSARY[key])}）</span>`;
+    });
   } catch (e) { return escapedText; }
 }
 
@@ -18587,7 +18612,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.50.1", build: 1790871333 };
+const CURRENT_VERSION = { version: "2.51.0", build: 1790872112 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

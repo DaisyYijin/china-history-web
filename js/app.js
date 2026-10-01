@@ -42,18 +42,28 @@ function esc(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
-/* 术语自动注释：正文中的词典词条加标记，点击弹大白话解释 */
+/* 术语自动注释：正文中的词典词条加标记，点击弹大白话解释；
+   重点词条（INLINE_TERMS，如各条约）首次出现直接内联展示内容 */
 let glossaryRegex = null;
 function glossarize(escapedText) {
   if (typeof GLOSSARY === "undefined" || !escapedText) return escapedText;
   try {
     if (!glossaryRegex) {
-      // 词典键均为中文词，无需正则转义；长词优先避免短词截断匹配
+      // 词典键均为中文词，无需正则转义；长词优先避免短词截断匹配；
+      // 可选的右书名号一并包进词条，内联注释才能落在《》之外
       const keys = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
-      glossaryRegex = new RegExp(keys.join("|"), "g");
+      glossaryRegex = new RegExp("(" + keys.join("|") + ")(》?)", "g");
     }
-    return escapedText.replace(glossaryRegex, m =>
-      `<span class="term" data-term="${m}">${m}</span>`);
+    const inlined = new Set();
+    return escapedText.replace(glossaryRegex, (m, key, bracket, offset, s) => {
+      const span = `<span class="term" data-term="${key}">${key}${bracket}</span>`;
+      if (typeof INLINE_TERMS === "undefined" || INLINE_TERMS.indexOf(key) < 0 || inlined.has(key)) return span;
+      // 正文紧接着「：」自行展开说明时（如条约事件的「结果」栏）不重复加注
+      const after = s.charAt(offset + m.length);
+      if (after === "：" || after === ":") return span;
+      inlined.add(key);
+      return span + `<span class="term-note">（${esc(GLOSSARY[key])}）</span>`;
+    });
   } catch (e) { return escapedText; }
 }
 
@@ -1220,7 +1230,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.50.1", build: 1790871333 };
+const CURRENT_VERSION = { version: "2.51.0", build: 1790872112 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");

@@ -1650,3 +1650,7 @@ body.light .p-card .avatar::after, body.light .person-head .avatar::after {
 }
 .plb-close:hover { background: rgba(48, 54, 66, .95); }
 /* 深浅主题统一用深色底衬托画像，无需 body.light 分支 */
+
+/* ---------- 重点词条内联注释（条约等首次出现直接展示） ---------- */
+.term-note { color: var(--muted); font-size: .92em; }
+.term-note b { font-weight: 600; }
