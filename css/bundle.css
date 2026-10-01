@@ -1025,6 +1025,14 @@ body.light .wiki-foot { background: rgba(120, 95, 40, .05); }
   align-items: center;
   gap: 12px;
   margin: 14px 0;
+  /* 吸顶：滚动查看地图与说明时，时期切换栏始终跟随屏幕（紧贴主导航下方） */
+  position: sticky;
+  top: 60px;
+  z-index: 40;
+  padding: 8px 4px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 8px 16px -12px rgba(0, 0, 0, .55);
 }
 .map-nav-btn {
   flex: 0 0 auto;
