@@ -84,5 +84,6 @@
   "js/portraits.js",
   "js/period-map.js",
   "js/battle-map.js",
+  "js/people-more.js",
   "js/app.js"
 ]
