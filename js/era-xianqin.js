@@ -17,37 +17,37 @@ Object.assign(FACTIONS, {
 Object.assign(PEOPLE, {
   /* ---------- 上古传说 ---------- */
   "huangdi": {
-    name: "黄帝", life: "传说人物", faction: "shanggu", title: "人文初祖",
+    name: "黄帝", life: "传说时代 · 约前27世纪", faction: "shanggu", title: "人文初祖",
     bio: "有熊氏部落首领，号轩辕氏。传说中他在涿鹿之战擒杀蚩尤、阪泉之战兼并炎帝部落，促成炎黄部落联盟，被尊为中华民族共同祖先“人文初祖”。历代皆以“炎黄子孙”自称。",
     events: ["zhanlu", "yanhuang"]
   },
   "yandi": {
-    name: "炎帝", life: "传说人物", faction: "shanggu", title: "神农氏",
+    name: "炎帝", life: "传说时代 · 约前27世纪", faction: "shanggu", title: "神农氏",
     bio: "姜姓部落首领，号神农氏。传说他尝百草、教耕种、发明医药，与黄帝部落在阪泉之战后结成部落联盟，构成“炎黄”之祖。后人为纪念炎帝，建有炎帝陵。",
     events: ["yanhuang"]
   },
   "chiyou": {
-    name: "蚩尤", life: "传说人物", faction: "shanggu", title: "九黎之君",
-    bio: "传说中九黎部落的首领，铜头铁额、骁勇善战，被后世尊为“战神”。在涿鹿之战中被炎黄联盟击败。部分苗族尊其为先祖。",
+    name: "蚩尤", life: "传说时代 · 约前26世纪", faction: "shanggu", title: "九黎之君",
+    bio: "上古传说中九黎部落首领，相传铜头铁额、骁勇善战，与黄帝战于涿鹿兵败被擒。后世以其为「兵主」战神立祠祭祀；九黎余部南迁，成为苗族等南方民族传说中的祖先之一。他与黄帝、炎帝的战争，是中华文明起源记忆里「华夷交融」的宏大象征。",
     events: ["zhanlu"]
   },
   "yao": {
-    name: "尧", life: "传说人物", faction: "shanggu", title: "唐尧 · 禅让典范",
+    name: "尧", life: "传说时代 · 约前23世纪", faction: "shanggu", title: "唐尧 · 禅让典范",
     bio: "传说中父系氏族社会后期的部落联盟首领。年老时不传位于子丹朱，而是推举贤能的舜继位，开创“禅让制”，成为儒家千古称颂的政治理想。",
     events: ["chanshang"]
   },
   "shun": {
-    name: "舜", life: "传说人物", faction: "shanggu", title: "虞舜 · 耕历山",
-    bio: "传说中出身寒微的贤者，耕于历山、渔于雷泽，以孝行闻名，受尧禅让即位，任用大禹治水、皋陶掌刑，晚年又禅位于禹。",
+    name: "舜", life: "传说时代 · 约前22世纪", faction: "shanggu", title: "虞舜 · 耕历山",
+    bio: "传说中五帝之一，姓姚名重华，出身寒微，耕历山、渔雷泽，以孝行与德政闻名。尧以二女妻之、禅以帝位；舜举用禹、皋陶、契等二十二人，命禹治水成功，终禅位于禹。「尧天舜日」由此成为后世治世的最高想象。",
     events: ["chanshang"]
   },
   "yu": {
-    name: "大禹", life: "传说人物", faction: "shanggu", title: "治水圣王",
+    name: "大禹", life: "传说时代 · 约前21世纪", faction: "shanggu", title: "治水圣王",
     bio: "姒姓，奉命治水十三年，三过家门而不入，改“堵”为“疏”，终于平息水患。因功受舜禅让，其后划定九州、铸造九鼎，建立夏朝，中国从此进入“家天下”的时代。",
     events: ["dayu", "chanshang"]
   },
   "qi_xia": {
-    name: "启", life: "传说人物", faction: "xizhou", title: "夏启 · 世袭之始",
+    name: "启", life: "传说时代 · 约前21世纪", faction: "xizhou", title: "夏启 · 世袭之始",
     bio: "大禹之子。禹死后，启杀掉据让位于伯益的传统而自立，确立王位世袭制，“公天下”变为“家天下”，夏朝作为中国第一个王朝由此稳固建立。",
     events: ["dayu"]
   },
@@ -64,12 +64,12 @@ Object.assign(PEOPLE, {
     events: ["shangmie"]
   },
   "pangen": {
-    name: "盘庚", life: "商代君主", faction: "xizhou", title: "迁殷定邦",
+    name: "盘庚", life: "商朝 · 约前13世纪", faction: "xizhou", title: "迁殷定邦",
     bio: "商朝第二十位君主。为摆脱贵族掣肘与水患困扰，力排众议将都城迁至殷（今河南安阳），商朝自此稳定下来，故商又称“殷商”。安阳殷墟出土的甲骨文和司母戊大方鼎，正是这一时期灿烂青铜文明的见证。",
     events: ["pangeng"]
   },
   "wuding": {
-    name: "武丁", life: "商代君主", faction: "xizhou", title: "武丁中兴",
+    name: "武丁", life: "商朝 · 约前13—前12世纪", faction: "xizhou", title: "武丁中兴",
     bio: "商朝第二十二位君主。少年时被父亲派往民间劳作，深知稼穑艰难。即位后举傅说于版筑之间，商朝国势达到鼎盛，史称“武丁中兴”，在位五十九年。",
     events: ["wuding"]
   },
@@ -186,7 +186,7 @@ Object.assign(PEOPLE, {
     events: ["zhanguo-bianfa"]
   },
   "ximenbao": {
-    name: "西门豹", life: "战国初期", faction: "zhanguo", title: "河伯娶妇终结者",
+    name: "西门豹", life: "战国魏 · 约前5世纪", faction: "zhanguo", title: "河伯娶妇终结者",
     bio: "魏国邺令。到任后破除“河伯娶妇”的巫祝骗局，将三老、巫婆投入河中，随后率民凿十二渠引漳水灌田，“名闻天下，泽流后世”。中国历史上破除迷信、兴修水利的典范。",
     events: ["zhanguo-bianfa"]
   },
@@ -221,12 +221,12 @@ Object.assign(PEOPLE, {
     events: ["hezong-lianheng"]
   },
   "linxiangru": {
-    name: "蔺相如", life: "战国赵人", faction: "zhanguo", title: "完璧归赵",
+    name: "蔺相如", life: "约前329—前243", faction: "zhanguo", title: "完璧归赵",
     bio: "赵国宦者令缪贤舍人，奉璧入秦，见秦王无意偿城，持璧倚柱怒发冲冠，终完璧归赵；渑池会上迫秦王击缶，位拜上卿。廉颇不服欲辱之，他引车避匿：“先国家之急而后私仇。”廉颇遂负荆请罪，将相和。",
     events: ["xiangru"]
   },
   "lianpo": {
-    name: "廉颇", life: "战国赵将", faction: "zhanguo", title: "老将 · 负荆请罪",
+    name: "廉颇", life: "约前327—前243", faction: "zhanguo", title: "老将 · 负荆请罪",
     bio: "赵国名将，攻齐伐燕战功赫赫。长平之战以坚壁固守四年，秦不能入，因反间计被赵括替换，终致惨败。晚年奔魏居楚，卒于寿春。辛弃疾叹“廉颇老矣，尚能饭否”，成为英雄迟暮的千古象征。",
     events: ["xiangru", "changping"]
   },
@@ -271,7 +271,7 @@ Object.assign(PEOPLE, {
     events: ["mieLiuguo", "qin-zhongyang"]
   },
   "wangjian": {
-    name: "王翦", life: "战国末秦将", faction: "qindyn", title: "战国四大名将之一",
+    name: "王翦", life: "战国秦 · 约前3世纪", faction: "qindyn", title: "战国四大名将之一",
     bio: "频阳东乡人。破赵、下燕，率六十万大军灭楚，行前再三向秦王“请美田宅园池甚众”，以自污安君心，成为做臣子的经典智慧。与其子王贲并灭五国（韩、赵、燕、楚、魏? 王贲灭魏与齐），一门功高而善终。",
     events: ["mieLiuguo"]
   },
@@ -281,7 +281,7 @@ Object.assign(PEOPLE, {
     events: ["qin-zhongyang"]
   },
   "libing": {
-    name: "李冰", life: "战国秦人", faction: "wenwu", title: "都江堰之父",
+    name: "李冰", life: "战国秦 · 约前3世纪", faction: "wenwu", title: "都江堰之父",
     bio: "秦昭王时任蜀郡守。与儿子主持修建都江堰，以鱼嘴分水、飞沙堰泄洪、宝瓶口引流三大工程驯服岷江，使成都平原从此“水旱从人，不知饥馑”，成为天府之国。两千二百多年后的今天，都江堰仍在灌溉良田，被誉为世界水利史上的奇迹。",
     events: ["dujiangyan"]
   },

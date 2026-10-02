@@ -32,7 +32,7 @@ const PERIODS = {
   16: { name: "当代中国",         sub: "1949 — 今 · 复兴之路" }
 };
 
-const TABS = ["timeline-section", "graph-section", "people-section", "map-section"];
+const TABS = ["timeline-section", "graph-section", "people-section", "map-section", "stats-section"];
 const PAGE_SIZE = 60;
 const THEME_KEY = "history-theme";
 
@@ -181,6 +181,9 @@ function switchTab(id, push) {
       if (!periodMapChart) initPeriodMap();
       else periodMapChart.resize();
     }, 0);
+  }
+  if (id === "stats-section") {
+    setTimeout(() => { if (!window._statsCharts) renderStats(); else window._statsCharts.forEach(c => c.resize()); }, 0);
   }
   if (push !== false) try { history.replaceState(null, "", "#" + id); } catch (e) {}
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -384,7 +387,9 @@ let peoplePage = 1;
 
 function renderFactionFilters() {
   const box = document.getElementById("faction-filters");
-  const defs = [["all", { name: "全部人物", color: "#d3a94f" }]]
+  const n = favs().p.length;
+  const defs = [["all", { name: "全部人物", color: "#d3a94f" }],
+                ["fav", { name: "★ 我的收藏" + (n ? " " + n : ""), color: "#e6b422" }]]
     .concat(Object.keys(FACTIONS).map(k => [k, FACTIONS[k]]));
   box.innerHTML = defs.map(([key, f]) =>
     `<button class="filter-btn ${key === factionFilter ? "active" : ""}" data-f="${key}">
@@ -392,6 +397,35 @@ function renderFactionFilters() {
      </button>`).join("");
   box.querySelectorAll(".filter-btn").forEach(btn => {
     btn.onclick = () => { factionFilter = btn.dataset.f; peoplePage = 1; renderFactionFilters(); renderPeopleGrid(); };
+  });
+}
+
+/* ---------- 本地收藏（localStorage，仅存于本机浏览器） ---------- */
+var FAV_KEY = "history-favs";
+function favs() {
+  try { const f = JSON.parse(localStorage.getItem(FAV_KEY)); return f && f.p && f.e ? f : { p: [], e: [] }; }
+  catch (e) { return { p: [], e: [] }; }
+}
+function toggleFav(kind, id) {
+  const f = favs();
+  const arr = f[kind] || (f[kind] = []);
+  const i = arr.indexOf(id);
+  if (i === -1) arr.push(id); else arr.splice(i, 1);
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(f)); } catch (e) {}
+  syncFavBtns();
+  if (kind === "p") {
+    if (factionFilter === "fav" || i !== -1) renderPeopleGrid();
+    renderFactionFilters();
+  }
+  toastMsg(i === -1 ? "已收藏 ★（人物志「我的收藏」可查看）" : "已取消收藏", 1600);
+}
+function syncFavBtns() {
+  const f = favs();
+  modalBody.querySelectorAll("[data-fav]").forEach(btn => {
+    const kind = btn.dataset.fav.slice(0, 1), id = btn.dataset.fav.slice(2);
+    const on = (f[kind] || []).indexOf(id) !== -1;
+    btn.classList.toggle("on", on);
+    btn.textContent = on ? "★ 已收藏" : "☆ 收藏";
   });
 }
 
@@ -409,8 +443,10 @@ function avatarHue(id) {
 function renderPeopleGrid() {
   const grid = document.getElementById("people-grid");
   const term = getTerm();
+  const favList = favs().p;
   const list = PEOPLE_LIST.filter(p =>
-    (factionFilter === "all" || p.faction === factionFilter) &&
+    (factionFilter === "all" || p.faction === factionFilter ||
+      (factionFilter === "fav" && favList.indexOf(p.id) !== -1)) &&
     (eraFilter === "all" || String(eraOfPerson(p)) === String(eraFilter)) &&
     (!term || personMatch(p, term)));
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -419,16 +455,18 @@ function renderPeopleGrid() {
 
   grid.innerHTML = slice.length ? slice.map(p => {
     const f = FACTIONS[p.faction];
+    const fav = favList.indexOf(p.id) !== -1;
     return `<div class="p-card" data-open-person="${p.id}" title="${esc(p.title)}" style="--pc:${f.color}">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}"${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? ` data-big="${p.id}"` : ""}>${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove();this.parentElement.removeAttribute('data-big')">` : ""}${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}"${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? ` data-big="${p.id}"` : ""}>${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="${esc(p.name)}" loading="lazy" onerror="this.remove();this.parentElement.removeAttribute('data-big')">` : ""}${esc(avatarChars(p.name))}</div>
+      ${fav ? '<span class="p-fav" aria-hidden="true">★</span>' : ""}
       <div class="p-name">${esc(p.name)}</div>
       <div class="p-life">${esc(p.life)}</div>
       <div class="p-title">${esc(p.title)}</div>
       <span class="p-faction" style="color:${f.color};border-color:${f.color}">${f.name}</span>
     </div>`;
   }).join("") : `<div class="empty-state"><div class="empty-icon">👤</div>
-       <p>没有匹配的人物</p>
-       <p class="empty-hint">试试全名或称号，例如：李白、岳飞、钱学森</p></div>`;
+       <p>${factionFilter === "fav" ? "还没有收藏任何人物" : "没有匹配的人物"}</p>
+       <p class="empty-hint">${factionFilter === "fav" ? "打开人物详情，点右上角的 ⭐ 即可收藏" : "试试全名或称号，例如：李白、岳飞、钱学森"}</p></div>`;
 
   applyRuby(grid);
   const pager = document.getElementById("people-pagination");
@@ -486,7 +524,8 @@ function pyMatch(kind, id, term) {
 }
 
 function evMatch(ev, term) {
-  const hay = [ev.title, ev.date, ev.desc, ev.result || "", ev.people.map(id => PERSON_MAP[id] && PERSON_MAP[id].name).join("、")].join("\n");
+  const plain = typeof EVENT_PLAIN !== "undefined" && EVENT_PLAIN[ev.id] ? EVENT_PLAIN[ev.id] : "";
+  const hay = [ev.title, ev.date, ev.desc, ev.result || "", plain, ev.people.map(id => PERSON_MAP[id] && PERSON_MAP[id].name).join("、")].join("\n");
   return hay.indexOf(term) !== -1 || pyMatch("e", ev.id, term);
 }
 
@@ -588,6 +627,7 @@ function openModal() {
   modalMask.hidden = false;
   document.body.style.overflow = "hidden";
   applyRuby(modalBody);
+  try { document.getElementById("modal-close").focus(); } catch (e) {}
 }
 function closeModal() {
   modalMask.hidden = true;
@@ -748,7 +788,7 @@ function openEvent(id) {
   const plain = typeof EVENT_PLAIN !== "undefined" && EVENT_PLAIN[ev.id];
   modalBody.innerHTML = `
     <span class="m-cat" style="color:${cat.color}">${cat.name}</span><span class="m-date">${esc(ev.date)} · ${period.name}</span>
-    <h3 class="m-title">${esc(ev.title)}<button class="share-btn" data-share="e:${ev.id}" title="复制本页链接">🔗 分享</button></h3>
+    <h3 class="m-title">${esc(ev.title)}<span class="head-btns"><button class="fav-btn" data-fav="e:${ev.id}" title="收藏本事件">☆ 收藏</button><button class="share-btn" data-share="e:${ev.id}" title="复制本页链接">🔗 分享</button></span></h3>
     ${plain ? `<div class="plain-box"><b>🔎 一句话看懂</b><div>${esc(plain)}</div></div>` : ""}
     <h4 class="m-h4">背景与经过</h4>
     <p class="m-desc">${glossarize(esc(ev.desc))}</p>
@@ -756,6 +796,7 @@ function openEvent(id) {
     <h4 class="m-h4">结局与影响</h4>
     <div class="result-box">${glossarize(esc(ev.result))}</div>
     ${peopleHtml}`;
+  syncFavBtns();
   openModal();
   modalBody.scrollTop = 0;
 }
@@ -857,7 +898,7 @@ function openPerson(id) {
   const _html = _personHtmlCache.get(_cacheKey) || (() => {
     const html = `
     <div class="person-head">
-      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}"${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? ` data-big="${p.id}"` : ""}>${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="" loading="lazy" onerror="this.remove();this.parentElement.removeAttribute('data-big')">` : ""}${esc(avatarChars(p.name))}</div>
+      <div class="avatar" ${avatarChars(p.name).length > 1 ? 'data-two=""' : ""} style="--ac:${f.color};--h:${avatarHue(p.id)}"${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? ` data-big="${p.id}"` : ""}>${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="${esc(p.name)}" loading="lazy" onerror="this.remove();this.parentElement.removeAttribute('data-big')">` : ""}${esc(avatarChars(p.name))}</div>
       <div class="p-meta">
         <h3>${esc(p.name)}</h3>
         <div class="p-life">${esc(p.life)}</div>
@@ -866,7 +907,11 @@ function openPerson(id) {
           <span class="badge" style="color:var(--gold);border-color:var(--gold)">${esc(p.title)}</span>
         </div>
       </div>
-      <button class="share-btn" data-share="p:${id}" title="复制本页链接">🔗 分享</button>
+      <div class="head-btns">
+        <button class="fav-btn" data-fav="p:${id}" title="收藏本人物">☆ 收藏</button>
+        <button class="cmp-btn" data-cmp="${id}" title="与其他人物对比">⚖ 对比</button>
+        <button class="share-btn" data-share="p:${id}" title="复制本页链接">🔗 分享</button>
+      </div>
     </div>
     ${vitaHtml}
     <div class="beginner-note">先认识一下：${esc(p.name)}（${esc(p.life)}），${esc(f.name)}人物 —— ${esc(p.title)}。生词带<span class="term-demo">虚线下划线</span>的都可以点开解释。</div>
@@ -885,6 +930,7 @@ function openPerson(id) {
   })();
   modalBody.innerHTML = _html;
   injectModalToc();
+  syncFavBtns();
   openModal();
   modalBody.scrollTop = 0;
   renderMiniGraph(id, f.color);
@@ -1339,7 +1385,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.59.0", build: 1790907468 };
+const CURRENT_VERSION = { version: "2.60.0", build: 1790950215 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1399,6 +1445,15 @@ document.addEventListener("click", e => {
     } else toastMsg(url);
     return;
   }
+  // 收藏 / 对比（先于头像与卡片跳转处理）
+  const favBtn = e.target.closest("[data-fav]");
+  if (favBtn) { const parts = favBtn.dataset.fav.split(":"); toggleFav(parts[0], parts[1]); return; }
+  const cmpBtn = e.target.closest("[data-cmp]");
+  if (cmpBtn) { openComparePicker(cmpBtn.dataset.cmp); return; }
+  const cmpPick = e.target.closest("[data-cmp-pick]");
+  if (cmpPick) { openCompare(cmpPick.dataset.from, cmpPick.dataset.cmpPick); return; }
+  const glossBtn = e.target.closest("[data-gloss-open]");
+  if (glossBtn) { openGlossary(); return; }
   // 头像 → 大图（优先于所在人物卡片的打开人物）
   const bigAv = e.target.closest(".avatar[data-big]");
   if (bigAv) { openPortraitLb(bigAv.dataset.big); return; }
@@ -1425,7 +1480,10 @@ document.getElementById("guide-btn").onclick = () => {
     <h4 class="m-h4">④ 人物志怎么用</h4>
     <p class="m-desc">按阵营浏览全部人物，<b>点卡片</b>看详细生平：他的一生按年份排成<b>年谱</b>（哪年出生、哪年考上功名、哪年打了什么仗），下面还有以他为中心的关系小图。</p>
     <h4 class="m-h4">⑤ 顶部搜索框</h4>
-    <p class="m-desc">输入任何关键词（人名、战役名、朝代）即时过滤事件和人物。</p>`;
+    <p class="m-desc">输入任何关键词（人名、战役名、朝代）即时过滤事件和人物。</p>
+    <h4 class="m-h4">⑥ 更多玩法</h4>
+    <p class="m-desc">顶栏 <b>🎲</b> 随机打开一位人物或一件大事；<b>🎯</b> 来一轮 10 题小测验；人物详情页可 <b>⭐ 收藏</b>（本机保存）与 <b>⚖ 对比</b>；「数据一览」页看全站宏观统计。</p>
+    <div class="quiz-actions"><button class="mini-btn big" data-gloss-open>📚 打开完整术语词典（可搜索）</button></div>`;
   openModal();
   modalBody.scrollTop = 0;
 };
@@ -2219,3 +2277,261 @@ window.addEventListener("pagehide", savePageState);
   };
   document.head.appendChild(s);
 })();
+
+
+/* ================= v2.60 新功能块：随机漫游 / 小测验 / 人物对比 / 数据一览 / 术语词典 ================= */
+
+/* ---------- 随便看看 ---------- */
+document.getElementById("random-btn").onclick = function () {
+  if (Math.random() < 0.55) {
+    const p = PEOPLE_LIST[Math.floor(Math.random() * PEOPLE_LIST.length)];
+    openPerson(p.id);
+    toastMsg("🎲 本期人物：" + p.name + "（" + p.life + "）", 2200);
+  } else {
+    const ev = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+    openEvent(ev.id);
+    toastMsg("🎲 本期事件：" + ev.title, 2200);
+  }
+};
+
+/* ---------- 历史小测验 ---------- */
+var quizState = null;
+function quizPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function quizShuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function quizWrongPeriods(exclude, n) {
+  const keys = Object.keys(PERIODS).filter(k => String(k) !== String(exclude));
+  return quizShuffle(keys).slice(0, n).map(k => PERIODS[k].name);
+}
+function buildQuizQuestions() {
+  const qs = [];
+  const knownPeople = PEOPLE_LIST.filter(p => { const e = eraOfPerson(p); return e && PERIODS[e]; });
+  const knownEvents = EVENTS.filter(ev => PERIODS[periodOf(ev)]);
+  for (let i = 0; i < 3; i++) {           // ① 人物归属时期
+    const p = quizPick(knownPeople);
+    const right = PERIODS[eraOfPerson(p)].name;
+    qs.push({ text: "「" + p.name + "」（" + p.title + "）活跃于哪个时期？",
+      options: quizShuffle([right].concat(quizWrongPeriods(eraOfPerson(p), 3))), answer: right,
+      open: { kind: "p", id: p.id, label: p.name } });
+  }
+  for (let i = 0; i < 2; i++) {           // ② 事件归属时期
+    const ev = quizPick(knownEvents);
+    const right = PERIODS[periodOf(ev)].name;
+    qs.push({ text: "「" + ev.title + "」发生在哪个时期？",
+      options: quizShuffle([right].concat(quizWrongPeriods(periodOf(ev), 3))), answer: right,
+      open: { kind: "e", id: ev.id, label: ev.title } });
+  }
+  for (let i = 0; i < 3; i++) {           // ③ 谁更早
+    let a = quizPick(knownEvents), b = quizPick(knownEvents), guard = 0;
+    while ((!a.year || !b.year || a.year === b.year) && guard++ < 40) b = quizPick(knownEvents);
+    if (a.year === b.year) continue;
+    const earlier = a.year < b.year ? a : b;
+    qs.push({ text: "下面哪件事发生得更早？", options: [a.title, b.title], answer: earlier.title,
+      open: { kind: "e", id: earlier.id, label: earlier.title } });
+  }
+  const goodRels = RELATIONS.filter(r => PERSON_MAP[r.a] && PERSON_MAP[r.b]);
+  for (let i = 0; i < 2; i++) {           // ④ 关系题
+    const r = quizPick(goodRels);
+    const anchor = PERSON_MAP[r.a], other = PERSON_MAP[r.b];
+    const wrongs = quizShuffle(PEOPLE_LIST.filter(p => p.id !== other.id && p.id !== r.a)).slice(0, 3).map(p => p.name);
+    qs.push({ text: "谁与「" + anchor.name + "」是「" + r.t + "」的关系？",
+      options: quizShuffle([other.name].concat(wrongs)), answer: other.name,
+      open: { kind: "p", id: other.id, label: other.name } });
+  }
+  return quizShuffle(qs).slice(0, 10);
+}
+function openQuiz() {
+  quizState = { qs: buildQuizQuestions(), i: 0, score: 0, wrong: [] };
+  modalBody.innerHTML = `
+    <h3 class="m-title">🎯 历史小测验</h3>
+    <div class="beginner-note">从全站 ${PEOPLE_LIST.length} 位人物、${EVENTS.length} 件大事里随机出 <b>10 题</b>：人物属于哪个时期、事件先后、谁和谁有关系……答完看得分与错题回顾，点击错题可直达详情页。题目每次随机生成。</div>
+    <div class="quiz-actions"><button class="mini-btn big" id="quiz-start">开始答题</button></div>`;
+  document.getElementById("quiz-start").onclick = () => { quizState.i = 0; quizState.score = 0; quizState.wrong = []; renderQuizQuestion(); };
+  openModal(); modalBody.scrollTop = 0;
+}
+function renderQuizQuestion() {
+  const st = quizState, q = st.qs[st.i];
+  if (!q) return renderQuizResult();
+  modalBody.innerHTML = `
+    <div class="quiz-bar"><span>第 ${st.i + 1} / ${st.qs.length} 题</span><i style="width:${Math.round(st.i / st.qs.length * 100)}%"></i><b>得分 ${st.score}</b></div>
+    <h3 class="quiz-q">${esc(q.text)}</h3>
+    <div class="quiz-opts">${q.options.map(o => `<button class="quiz-opt">${esc(o)}</button>`).join("")}</div>
+    <div class="quiz-foot" id="quiz-foot"></div>`;
+  modalBody.querySelectorAll(".quiz-opt").forEach(btn => {
+    btn.onclick = () => {
+      const right = btn.textContent === q.answer;
+      modalBody.querySelectorAll(".quiz-opt").forEach(b => {
+        b.disabled = true;
+        if (b.textContent === q.answer) b.classList.add("right");
+      });
+      if (right) st.score++; else { btn.classList.add("wrong"); st.wrong.push(q); }
+      document.getElementById("quiz-foot").innerHTML =
+        (right ? "✅ 答对了！" : "❌ 正确答案：「" + esc(q.answer) + "」") +
+        ` <button class="mini-btn" id="quiz-next">${st.i + 1 < st.qs.length ? "下一题" : "看成绩"}</button>`;
+      document.getElementById("quiz-next").onclick = () => { st.i++; renderQuizQuestion(); };
+    };
+  });
+  openModal(); modalBody.scrollTop = 0;
+}
+function renderQuizResult() {
+  const st = quizState, n = st.qs.length, s = st.score;
+  const grade = s >= 9 ? "🏆 学富五车" : s >= 7 ? "🎖 博古通今" : s >= 5 ? "📜 渐入佳境" : "🌱 再读一遍年表";
+  modalBody.innerHTML = `
+    <h3 class="m-title">🎯 本轮成绩</h3>
+    <div class="quiz-score"><b>${s}</b><span>/ ${n}</span><em>${grade}</em></div>
+    ${st.wrong.length ? `<h4 class="m-h4">错题回顾（点击可查看详情）</h4><div class="quiz-wrong">
+      ${st.wrong.map(q => `<div class="quiz-wrong-item"><span>${esc(q.text)}→ <b>${esc(q.answer)}</b></span>
+        <button class="chip" data-open-${q.open.kind === "p" ? "person" : "event"}="${q.open.id}">查看「${esc(q.open.label)}」</button></div>`).join("")}
+    </div>` : `<div class="beginner-note">全对！这一轮没有错题 🎉</div>`}
+    <div class="quiz-actions"><button class="mini-btn big" id="quiz-again">再来一轮</button></div>`;
+  document.getElementById("quiz-again").onclick = openQuiz;
+  openModal(); modalBody.scrollTop = 0;
+}
+document.getElementById("quiz-btn").onclick = openQuiz;
+
+/* ---------- 人物对比 ---------- */
+function openComparePicker(aId) {
+  const a = PERSON_MAP[aId];
+  if (!a) return;
+  setModalHash("p", aId);
+  modalBody.innerHTML = `
+    <h3 class="m-title">⚖ 选择对比对象</h3>
+    <div class="beginner-note">「<b>${esc(a.name)}</b>（${esc(a.life)}）」已就位——搜索并点击另一位历史人物，开始并排对比。</div>
+    <div class="search-wrap in-modal"><input type="search" id="cmp-search" placeholder="输入人名 / 拼音搜索…" autocomplete="off"></div>
+    <div class="cmp-list" id="cmp-list"></div>`;
+  const list = document.getElementById("cmp-list");
+  const render = term => {
+    const cands = PEOPLE_LIST.filter(p => p.id !== aId && (!term || personMatch(p, term))).slice(0, 60);
+    list.innerHTML = cands.length ? cands.map(p => `<button class="chip cmp-pick" data-from="${aId}" data-cmp-pick="${p.id}">
+      <span class="dot" style="background:${FACTIONS[p.faction].color}"></span>${esc(p.name)}<em>${esc(p.life)} · ${esc(p.title)}</em></button>`).join("")
+      : '<div class="empty-state" style="padding:20px"><p>没有匹配的人物</p></div>';
+  };
+  render("");
+  document.getElementById("cmp-search").addEventListener("input", e => render(e.target.value.trim()));
+  openModal(); modalBody.scrollTop = 0;
+}
+function openCompare(aId, bId) {
+  const A = PERSON_MAP[aId], B = PERSON_MAP[bId];
+  if (!A || !B) return;
+  setModalHash("p", aId);
+  const fa = FACTIONS[A.faction], fb = FACTIONS[B.faction];
+  const age = p => {
+    const y = (p.life || "").replace(/前(\d+)/g, "-$1").match(/-?\d+/g);
+    return y && y.length >= 2 && +y[1] >= +y[0] ? (+y[1] - +y[0] + 1) + " 岁（虚）" : "—";
+  };
+  const era = p => { const e = eraOfPerson(p); return e && PERIODS[e] ? PERIODS[e].name : "—"; };
+  const relN = id => RELATIONS.filter(r => r.a === id || r.b === id).length;
+  const vita = (id, k) => { const v = typeof PEOPLE_VITA !== "undefined" && PEOPLE_VITA[id]; return v && v[k] ? v[k] : ""; };
+  const col = (p, f) => `
+    <div class="cmp-col" data-open-person="${p.id}" style="--pc:${f.color}">
+      <div class="avatar" style="--ac:${f.color};--h:${avatarHue(p.id)}">${typeof PORTRAITS !== "undefined" && PORTRAITS[p.id] ? `<img src="${PORTRAITS[p.id]}" alt="${esc(p.name)}" loading="lazy" onerror="this.remove()">` : ""}${esc(avatarChars(p.name))}</div>
+      <h4>${esc(p.name)}</h4>
+      <div class="cmp-life">${esc(p.life)}</div>
+      <table class="cmp-table">
+        <tr><th>头衔</th><td>${esc(p.title)}</td></tr>
+        <tr><th>阵营</th><td style="color:${f.color}">${f.name}</td></tr>
+        <tr><th>时期</th><td>${era(p)}</td></tr>
+        <tr><th>享年</th><td>${age(p)}</td></tr>
+        <tr><th>参与事件</th><td>${(p.events || []).length} 件</td></tr>
+        <tr><th>关系人物</th><td>${relN(p.id)} 人</td></tr>
+        ${vita(p.id, "birth") ? `<tr><th>出生</th><td>${esc(vita(p.id, "birth")).slice(0, 60)}</td></tr>` : ""}
+        ${vita(p.id, "death") ? `<tr><th>离世</th><td>${esc(vita(p.id, "death")).slice(0, 60)}</td></tr>` : ""}
+      </table>
+      <p class="cmp-bio">${esc((p.bio || "").slice(0, 90))}…</p>
+    </div>`;
+  const rel = RELATIONS.find(r => (r.a === aId && r.b === bId) || (r.a === bId && r.b === aId));
+  modalBody.innerHTML = `
+    <h3 class="m-title">⚖ 人物对比</h3>
+    <div class="cmp-grid">${col(A, fa)}<div class="cmp-vs">对<small>比</small></div>${col(B, fb)}</div>
+    ${rel ? `<div class="result-box" style="margin-top:14px">两人直接关系：<b>${esc(rel.t)}</b>（点击上方名字可回看双方详情）</div>` : ""}
+    <div class="quiz-actions"><button class="mini-btn" id="cmp-repick">换人对比</button></div>`;
+  document.getElementById("cmp-repick").onclick = () => openComparePicker(aId);
+  openModal(); modalBody.scrollTop = 0;
+}
+
+/* ---------- 数据一览 ---------- */
+function renderStats() {
+  const strip = document.getElementById("stats-strip");
+  if (!strip) return;
+  const glossN = typeof GLOSSARY !== "undefined" ? Object.keys(GLOSSARY).length : 0;
+  const hiN = typeof PORTRAITS_HI !== "undefined" ? Object.keys(PORTRAITS_HI).length : 0;
+  strip.innerHTML = [
+    [PEOPLE_LIST.length, "历史人物"], [EVENTS.length, "重大事件"], [RELATIONS.length, "人物关系"],
+    [glossN, "术语词条"], [hiN, "高清画像"], [16, "时期疆域图"]
+  ].map(([n, t]) => `<div class="stat-cell"><b>${n}</b><span>${t}</span></div>`).join("");
+
+  const periodNames = Object.keys(PERIODS).map(k => PERIODS[k].name);
+  const pCnt = {}, eCnt = {};
+  Object.keys(PERIODS).forEach(k => { pCnt[k] = 0; eCnt[k] = 0; });
+  PEOPLE_LIST.forEach(p => { const e = eraOfPerson(p); if (pCnt[e] !== undefined) pCnt[e]++; });
+  EVENTS.forEach(ev => { const e = periodOf(ev); if (eCnt[e] !== undefined) eCnt[e]++; });
+
+  const ages = [];
+  PEOPLE_LIST.forEach(p => {
+    const y = (p.life || "").replace(/前(\d+)/g, "-$1").match(/-?\d+/g);
+    if (y && y.length >= 2 && +y[1] >= +y[0] && +y[1] - +y[0] < 110) ages.push(Math.min(100, +y[1] - +y[0] + 1));
+  });
+  const buckets = ["≤29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "≥90"];
+  const bCnt = [0, 0, 0, 0, 0, 0, 0, 0];
+  ages.forEach(a => { bCnt[a <= 29 ? 0 : a <= 39 ? 1 : a <= 49 ? 2 : a <= 59 ? 3 : a <= 69 ? 4 : a <= 79 ? 5 : a <= 89 ? 6 : 7]++; });
+
+  const facData = Object.keys(FACTIONS).map(k => ({
+    name: FACTIONS[k].name, value: PEOPLE_LIST.filter(p => p.faction === k).length,
+    itemStyle: { color: FACTIONS[k].color }
+  })).filter(d => d.value > 0);
+
+  const ink = cssVar("--ink") || "#e9e4d6", gold = cssVar("--gold") || "#d3a94f";
+  const axis = { axisLine: { lineStyle: { color: "rgba(150,150,150,.4)" } }, axisLabel: { color: ink, fontSize: 10 }, splitLine: { lineStyle: { color: "rgba(150,150,150,.15)" } } };
+  const charts = [];
+  const mk = (id, opt) => { const el = document.getElementById(id); if (!el || typeof echarts === "undefined") return; const c = echarts.init(el); c.setOption(opt); charts.push(c); };
+
+  mk("stats-period", {
+    grid: { left: 40, right: 10, top: 30, bottom: 70 },
+    legend: { data: ["人物数", "事件数"], textStyle: { color: ink }, top: 0 },
+    tooltip: { trigger: "axis" },
+    xAxis: Object.assign({}, axis, { type: "category", data: periodNames, axisLabel: Object.assign({}, axis.axisLabel, { rotate: 40, interval: 0 }) }),
+    yAxis: Object.assign({}, axis, { type: "value" }),
+    series: [
+      { name: "人物数", type: "bar", data: Object.keys(PERIODS).map(k => pCnt[k]), itemStyle: { color: gold } },
+      { name: "事件数", type: "bar", data: Object.keys(PERIODS).map(k => eCnt[k]), itemStyle: { color: "#7fa8dd" } }
+    ]
+  });
+  mk("stats-life", {
+    grid: { left: 40, right: 10, top: 20, bottom: 30 },
+    tooltip: { trigger: "axis" },
+    xAxis: Object.assign({}, axis, { type: "category", data: buckets }),
+    yAxis: Object.assign({}, axis, { type: "value" }),
+    series: [{ type: "bar", data: bCnt, itemStyle: { color: "#c98b6b" }, barWidth: "62%" }]
+  });
+  mk("stats-faction", {
+    tooltip: { trigger: "item", formatter: "{b}：{c} 人（{d}%）" },
+    series: [{ type: "pie", radius: ["38%", "68%"], center: ["50%", "52%"], data: facData,
+      label: { color: ink, fontSize: 10, formatter: "{b}\n{c}人" } }]
+  });
+  window._statsCharts = charts;
+  if (!window._statsResizeBound) {
+    window._statsResizeBound = true;
+    window.addEventListener("resize", () => (window._statsCharts || []).forEach(c => c.resize()));
+  }
+}
+
+/* ---------- 术语词典（全量浏览 + 搜索） ---------- */
+function openGlossary() {
+  const keys = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length || a.localeCompare(b, "zh"));
+  modalBody.innerHTML = `
+    <h3 class="m-title">📚 术语词典</h3>
+    <div class="beginner-note">全站 <b>${keys.length}</b> 条历史术语的大白话解释——正文里带虚线下划线的词都出自这份词典。</div>
+    <div class="search-wrap in-modal"><input type="search" id="gloss-search" placeholder="搜索术语，如：科举 / 均田 / 洋务…" autocomplete="off"><span class="gloss-count" id="gloss-count"></span></div>
+    <div class="gloss-list" id="gloss-list"></div>`;
+  const list = document.getElementById("gloss-list");
+  const cnt = document.getElementById("gloss-count");
+  const render = term => {
+    const hits = term ? keys.filter(k => k.indexOf(term) !== -1 || String(GLOSSARY[k]).indexOf(term) !== -1) : keys;
+    cnt.textContent = hits.length + " 条";
+    list.innerHTML = hits.length ? hits.slice(0, 260).map(k =>
+      `<div class="gloss-item"><b>${esc(k)}</b><span>${esc(String(GLOSSARY[k]).slice(0, 120))}</span></div>`).join("")
+      : '<div class="empty-state" style="padding:16px"><p>没有匹配的术语</p></div>';
+  };
+  render("");
+  document.getElementById("gloss-search").addEventListener("input", e => render(e.target.value.trim()));
+  openModal(); modalBody.scrollTop = 0;
+}

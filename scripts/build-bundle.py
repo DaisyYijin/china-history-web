@@ -88,10 +88,13 @@ def main():
     dat = [f for f in files if DATA_RE.match(f)]
     data_n = build_js(dat, ver, "js/bundle-data.js") if dat else 0
     css_n = build_css(ver)
-    print("bundle.js      %6.0f KB（%d 个文件）" % (js_n / 1024, len(files) - len(dat)))
+    # KB 一律按磁盘字节数统计（中文字符 UTF-8 占 3 字节，字符数会严重虚低）
+    import os as _os
+    disk = lambda p: _os.path.getsize(p) if _os.path.exists(p) else 0
+    print("bundle.js      %6.0f KB（%d 个文件）" % (disk("js/bundle.js") / 1024, len(files) - len(dat)))
     if dat:
-        print("bundle-data.js %6.0f KB（%d 个文件，异步加载）" % (data_n / 1024, len(dat)))
-    print("bundle.css     %6.0f KB（%d 个文件）" % (css_n / 1024, len(CSS_ORDER)))
+        print("bundle-data.js %6.0f KB（%d 个文件，异步加载）" % (disk("js/bundle-data.js") / 1024, len(dat)))
+    print("bundle.css     %6.0f KB（%d 个文件）" % (disk("css/bundle.css") / 1024, len(CSS_ORDER)))
 
 
 if __name__ == "__main__":

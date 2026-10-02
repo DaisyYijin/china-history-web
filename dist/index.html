@@ -4,8 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>中国通史 · 大事年表与人物图谱（远古 — 当代）</title>
-<link rel="stylesheet" href="css/bundle.css?v=2.59.0">
+<link rel="stylesheet" href="css/bundle.css?v=2.60.0">
   <meta name="description" content="中华上下五千年：大事年表、战役兵力对比、历代人物志与人物关系图谱。从炎黄传说到新时代。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="史鉴 · 华夏五千年">
+  <meta property="og:description" content="736 位历史人物 · 227 件大事 · 772 组人物关系 · 16 幅时期疆域图，一部可以点开看的中国通史。">
+  <meta property="og:image" content="https://china-history.surge.sh/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebSite","name":"史鉴 · 华夏五千年","description":"中国通史静态站：大事年表、人物志、关系图谱、疆域变迁","inLanguage":"zh-CN"}
+  </script>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#f4ecd9">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E">
@@ -45,11 +53,14 @@
         <a href="#graph-section" data-tab-link="graph-section" class="tab-link">关系图谱</a>
         <a href="#people-section" data-tab-link="people-section" class="tab-link">人物志</a>
         <a href="#map-section" data-tab-link="map-section" class="tab-link">疆域图</a>
+        <a href="#stats-section" data-tab-link="stats-section" class="tab-link">数据一览</a>
       </div>
       <div class="search-wrap">
         <input type="search" id="search" placeholder="搜索事件 / 人物 / 战役（支持拼音）…" autocomplete="off">
         <button id="search-clear" title="清空搜索" aria-label="清空搜索">✕</button>
       </div>
+      <button id="random-btn" class="theme-btn" title="随便看看：随机打开一位人物或一件大事" aria-label="随便看看">🎲</button>
+      <button id="quiz-btn" class="theme-btn" title="历史小测验：10 题闯关" aria-label="历史小测验">🎯</button>
       <button id="guide-btn" class="theme-btn" title="新手使用指南" aria-label="新手指南">📖</button>
       <button id="theme-toggle" class="theme-btn" title="切换亮色 / 暗色主题" aria-label="切换主题" aria-pressed="false">☀️</button>
     </div>
@@ -129,6 +140,20 @@
       域外政权仅作文字标注。内容仅作历史教学示意，不代表任何现实主张。</p>
     </section>
 
+    <!-- ================= 数据一览 ================= -->
+    <section id="stats-section" class="section tab-panel">
+      <div class="section-head">
+        <h2>数据一览</h2>
+        <p>全站数据的宏观画像：各时期人物与事件分布、人物寿命、阵营构成——切换时期/阵营后再看这张图，会有新发现</p>
+      </div>
+      <div class="stats-strip" id="stats-strip"></div>
+      <div class="stats-grid">
+        <div class="chart-box wide"><h4>各时期人物与事件数</h4><div id="stats-period" class="stats-chart"></div></div>
+        <div class="chart-box"><h4>人物享年分布</h4><div id="stats-life" class="stats-chart"></div></div>
+        <div class="chart-box"><h4>人物阵营构成</h4><div id="stats-faction" class="stats-chart"></div></div>
+      </div>
+    </section>
+
   </main>
 
   <nav id="tabbar" aria-label="主导航">
@@ -136,6 +161,7 @@
     <a href="#graph-section" data-tab-link="graph-section"><i>🕸</i>图谱</a>
     <a href="#people-section" data-tab-link="people-section"><i>👥</i>人物</a>
     <a href="#map-section" data-tab-link="map-section"><i>🗺</i>疆域</a>
+    <a href="#stats-section" data-tab-link="stats-section"><i>📊</i>数据</a>
   </nav>
 
   <button id="back-top" title="返回顶部" aria-label="返回顶部">↑</button>
@@ -156,6 +182,6 @@
     </div>
   </div>
 
-<script defer src="js/bundle.js?v=2.59.0"></script>
+<script defer src="js/bundle.js?v=2.60.0"></script>
 </body>
 </html>

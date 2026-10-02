@@ -24,7 +24,7 @@ Object.assign(PEOPLE, {
     events: []
   },
   "lichun": {
-    name: "李春", life: "隋代", faction: "suitang", title: "赵州桥 · 千年石拱",
+    name: "李春", life: "隋 · 约6—7世纪", faction: "suitang", title: "赵州桥 · 千年石拱",
     bio: "隋代匠师，生平不见正史，唐代张嘉贞《安济桥铭》留下唯一记载：「赵郡洨河石桥，隋匠李春之迹也，制造奇特」。他设计的赵州桥首创敞肩拱结构，主拱净跨三十七米余，历一千四百年洪水地震而不毁，至今仍在通行——世界桥梁史上的奇迹。",
     events: []
   },

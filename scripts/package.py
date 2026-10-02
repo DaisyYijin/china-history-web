@@ -26,6 +26,7 @@ FILES = [
     "sw.js",
     "manifest.webmanifest",
     "icon.svg",
+    "og-image.png",
     "js/bundle.js",
     "js/bundle-data.js",
     "css/bundle.css",

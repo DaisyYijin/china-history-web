@@ -33,5 +33,5 @@ s.token({ username: EMAIL, password: PASS }, (err, tok) => {
   em.on("success", () => { console.log("\n🎉 部署成功 → https://" + DOMAIN + "/"); process.exit(0); });
   em.on("fail", () => { console.error("\n发布失败"); process.exit(1); });
   em.on("error", e => { console.error("\n网络错误:", e.message || e); process.exit(1); });
-  setTimeout(() => { console.error("\n超时"); process.exit(1); }, 120000).unref();
+  setTimeout(() => { console.error("\n超时"); process.exit(1); }, 420000).unref();
 });

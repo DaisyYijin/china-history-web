@@ -12,7 +12,7 @@ Object.assign(PEOPLE, {
     events: ["changping", "dujiangyan"]
   },
   "zugeng": {
-    name: "祖暅", life: "南北朝", faction: "wenwu", title: "祖暅原理 · 子承父学",
+    name: "祖暅", life: "南朝梁 · 约5—6世纪", faction: "wenwu", title: "祖暅原理 · 子承父学",
     bio: "祖冲之之子，字景烁。继承父业研究数学与天文，提出等积原理（“幂势既同，则积不容异”）——西方称卡瓦列里原理，早于一千一百余年。多次上书推行父亲《大明历》未果，梁天监九年（510年）终于颁行。曾测北极高度，著《缀术》续篇（与父共著，已佚）。",
     events: ["nanbeikeji"]
   },
