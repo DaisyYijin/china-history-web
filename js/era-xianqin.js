@@ -74,7 +74,7 @@ Object.assign(PEOPLE, {
     events: ["wuding"]
   },
   "fuhao": {
-    name: "妇好", life: "商代", faction: "xizhou", title: "中国第一位女将军",
+    name: "妇好", life: "商武丁时期（约前1200年前后）", faction: "xizhou", title: "中国第一位女将军",
     bio: "武丁的王后，中国有文字记载的第一位女统帅。曾率一万三千大军出征羌方，屡次主持祭祀。1976年其墓在殷墟出土，随葬青铜器、玉器近两千件，令世界震惊。",
     events: ["wuding"]
   },
