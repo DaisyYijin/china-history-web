@@ -68,7 +68,7 @@ Object.assign(PEOPLE, {
     events: ["xinhai"]
   },
   "sunwu_wuchang": {
-    name: "孙武", life: "1879—1939", faction: "geming", title: "共进会领袖 · 制弹专家",
+    name: "孙武（辛亥）", life: "1879—1939", faction: "geming", title: "共进会领袖 · 制弹专家",
     bio: "湖北夏口人，共进会领导人，曾赴日学习军事并自制炸弹（炸断右手三指）。1911年10月9日汉口俄租界配制炸弹失事，机关暴露，促成了当晚仓促而决绝的起义。民国后组织“民社”拥黎元洪，渐离革命。晚年寓居北平、上海。",
     events: ["xinhai"]
   },

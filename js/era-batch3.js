@@ -222,11 +222,6 @@ Object.assign(PEOPLE, {
     bio: "常州宜兴人，天启进士。貌文弱而膂力过人，善骑射。创“天雄军”，屡挫流寇。1639年巨鹿贾庄，被太监高起潜拥兵不救，五千人被清军数万围困，身中数矢犹格杀十余人，马蹶阵亡，年四十。三郡百姓闻之，哭失声。",
     events: []
   },
-  "dengshichan_qing": {
-    name: "邓世昌", life: "1849—1894", faction: "qing", title: "此日漫挥天下泪",
-    bio: "广东番禺人，福州船政学堂首届生，北洋水师致远舰管带。1894年9月17日黄海海战，舰伤弹尽，下令开足马力冲撞吉野，中鱼雷沉没，爱犬衔其臂不让沉，毅然按犬首入水同没，全舰二百余人殉国。光绪帝垂泪撰联：“此日漫挥天下泪，有公足壮海军威。”",
-    events: ["jiawu"]
-  },
   "fengzicai": {
     name: "冯子材", life: "1818—1903", faction: "qing", title: "老将 · 镇南关大捷",
     bio: "广东钦州人，行伍出身，年近七旬挂帅。1885年3月，在镇南关内筑长墙，持矛大呼跃出，率二子冲锋，法军溃败，统帅尼格里重伤——近代中国反击列强的最大陆战胜利，直接导致法国茹费理内阁倒台。后总督云贵，1903年卒，谥勇毅。",
@@ -512,7 +507,6 @@ RELATIONS.push(
   { a: "lidingguo",     b: "duoergun",     t: "抗清与入关" },
   { a: "luxiangsheng",  b: "chongzhen",    t: "巨鹿殉国之君" },
   { a: "weizhongxian",  b: "chongzhen",    t: "即位即逐 · 赐死" },
-  { a: "dengshichan_qing", b: "dingruchang", t: "致远与定远的最后舰队" },
   { a: "fengzicai",     b: "zuozongtang",  t: "一南一北御外侮" },
   { a: "chenhuacheng",  b: "guantianpei",  t: "虎门吴淞先后殉国" },
   /* 民国 */

@@ -61,7 +61,6 @@ const PORTRAITS = {
  "denghua": "img/p/denghua.jpg",
  "dengjiaxian": "img/p/dengjiaxian.jpg",
  "dengshichang": "img/p/dengshichang.jpg",
- "dengshichan_qing": "img/p/dengshichan_qing.jpg",
  "dengshiru": "img/p/dengshiru.jpg",
  "dengxiaoping": "img/p/dengxiaoping.jpg",
  "dengyingchao": "img/p/dengyingchao.jpg",
