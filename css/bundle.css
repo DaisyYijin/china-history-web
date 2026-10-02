@@ -1685,3 +1685,87 @@ body.light .p-card .avatar::after, body.light .person-head .avatar::after {
 /* ---------- 重点词条内联注释（条约等首次出现直接展示） ---------- */
 .term-note { color: var(--muted); font-size: .92em; }
 .term-note b { font-weight: 600; }
+
+/* ---------- v2.58 优化：时期筛选 / 时间线导航 / 搜索联想 / 分享 / 灯箱态 ---------- */
+#era-filters { justify-content: center; }
+.filter-btn.era-f { font-size: 12.5px; }
+
+.tl-nav {
+  position: sticky; top: 54px; z-index: 40;
+  display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+  padding: 8px 4px; margin-bottom: 6px;
+  background: color-mix(in srgb, var(--bg, #12141b) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.tl-nav::-webkit-scrollbar { display: none; }
+.tl-nav button {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 999px; border: 1px solid transparent;
+  background: transparent; color: var(--muted);
+  font-family: var(--serif); font-size: 12.5px; letter-spacing: .04em;
+  cursor: pointer; white-space: nowrap; transition: all .15s;
+}
+.tl-nav button i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: all .15s; }
+.tl-nav button:hover { color: var(--gold); border-color: var(--line); }
+.tl-nav button.on { color: var(--ink-strong, #f2ead4); border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); }
+.tl-nav button.on i { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+
+.search-sug {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 120;
+  max-height: 60vh; overflow-y: auto;
+  background: var(--panel-2, #161a24); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.45);
+  padding: 6px;
+}
+.search-sug[hidden] { display: none; }
+.search-sug .sug-head { font-size: 11px; color: var(--muted); padding: 6px 10px 3px; letter-spacing: .2em; }
+.search-sug .sug-item {
+  display: flex; align-items: baseline; gap: 8px; width: 100%;
+  padding: 7px 10px; border: 0; border-radius: 7px; background: transparent;
+  color: var(--ink); font-size: 14px; text-align: left; cursor: pointer;
+}
+.search-sug .sug-item:hover { background: color-mix(in srgb, var(--gold) 12%, transparent); }
+.search-sug .sug-ico { font-size: 12px; }
+.search-sug .sug-item b { flex: 0 0 auto; }
+.search-sug .sug-item i { font-style: normal; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.share-btn {
+  margin-left: auto; flex: 0 0 auto;
+  padding: 5px 12px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background: transparent; color: var(--muted);
+  font-family: var(--serif); font-size: 12.5px; cursor: pointer;
+  align-self: flex-start; transition: all .15s;
+}
+.share-btn:hover { color: var(--gold); border-color: var(--gold); }
+.m-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.m-title .share-btn { margin-left: auto; }
+
+.plb-fig { position: relative; }
+.plb-fig img.plb-loading { min-height: 120px; }
+.plb-fig img.plb-loading::after {
+  content: ""; position: absolute; left: 50%; top: 45%;
+  width: 26px; height: 26px; margin: -13px; border-radius: 50%;
+  border: 3px solid rgba(211,169,79,.25); border-top-color: var(--gold);
+  animation: plb-spin .8s linear infinite;
+}
+@keyframes plb-spin { to { transform: rotate(360deg); } }
+.plb-err { padding: 26px 20px; color: var(--muted); font-size: 14px; }
+
+.graph-era {
+  max-width: 150px; cursor: pointer;
+  background: var(--panel-2, #161a24); color: var(--muted);
+  appearance: none; -webkit-appearance: none;
+}
+
+/* 移动端加固 */
+@media (max-width: 640px) {
+  .tl-nav { top: 48px; }
+  .modal-mask { padding: 10px; }
+  .person-head { flex-wrap: wrap; }
+  .person-head .share-btn { margin-left: 0; }
+  .mtl-row { flex-wrap: wrap; }
+  #graph, .china-map { touch-action: pan-y; }
+  .search-sug { position: fixed; top: auto; left: 8px; right: 8px; }
+}

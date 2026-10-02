@@ -34,14 +34,18 @@ def strip_sourcemap(src):
     return re.sub(r'^//# sourceMappingURL=.*$\n?', "", src, flags=re.M)
 
 
-def build_js(files, ver):
+def build_js(files, ver, out_path="js/bundle.js"):
     parts = []
     for f in files:
         body = strip_sourcemap(read(f)).rstrip()
         parts.append("\n;\n/* ===================== %s ===================== */\n%s\n" % (f, body))
     out = "".join(parts)
-    io.open(os.path.join(ROOT, "js", "bundle.js"), "w", encoding="utf-8", newline="\n").write(out)
+    io.open(os.path.join(ROOT, out_path), "w", encoding="utf-8", newline="\n").write(out)
     return len(out)
+
+
+# 深度内容层（弹窗才用得到）拆分为独立数据块，由 app.js 首屏后异步加载
+DATA_RE = re.compile(r"^js/(people-extra|people-vita|people-timeline|timelines-|portraits-hi)")
 
 
 def build_css(ver):
@@ -80,10 +84,14 @@ def main():
         html = re.sub(r'\n{3,}', '\n\n', html)
         io.open(HTML, "w", encoding="utf-8", newline="\n").write(html)
 
-    js_n = build_js(files, ver)
+    js_n = build_js([f for f in files if not DATA_RE.match(f)], ver)
+    dat = [f for f in files if DATA_RE.match(f)]
+    data_n = build_js(dat, ver, "js/bundle-data.js") if dat else 0
     css_n = build_css(ver)
-    print("bundle.js  %6.0f KB（%d 个文件）" % (js_n / 1024, len(files)))
-    print("bundle.css %6.0f KB（%d 个文件）" % (css_n / 1024, len(CSS_ORDER)))
+    print("bundle.js      %6.0f KB（%d 个文件）" % (js_n / 1024, len(files) - len(dat)))
+    if dat:
+        print("bundle-data.js %6.0f KB（%d 个文件，异步加载）" % (data_n / 1024, len(dat)))
+    print("bundle.css     %6.0f KB（%d 个文件）" % (css_n / 1024, len(CSS_ORDER)))
 
 
 if __name__ == "__main__":

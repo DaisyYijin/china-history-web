@@ -27,13 +27,16 @@ FILES = [
     "manifest.webmanifest",
     "icon.svg",
     "js/bundle.js",
+    "js/bundle-data.js",
     "css/bundle.css",
 ]
 
 def extra_files():
-    """img/p/ 下的画像（存在才打包）"""
+    """img/p/ 与 img/p2/ 下的画像（存在才打包）"""
     import glob
-    return [f.replace("\\", "/") for f in glob.glob("img/p/*") if "/" in f]
+    out = [f.replace("\\", "/") for f in glob.glob("img/p/*") if "/" in f]
+    out += [f.replace("\\", "/") for f in glob.glob("img/p2/*") if "/" in f]
+    return out
 
 
 def main():
@@ -50,7 +53,7 @@ def main():
     # 2. 注入 SW 预缓存清单（先改 sw.js 再复制，保证 dist 内外一致）
     swp = os.path.join(ROOT, "sw.js")
     sw = io.open(swp, encoding="utf-8").read()
-    data = ["./js/bundle.js", "./css/bundle.css"]
+    data = ["./js/bundle.js", "./js/bundle-data.js", "./css/bundle.css"]
     sw = re.sub(r"const DATA = \[[^\]]*\];",
                 "const DATA = " + json.dumps(data) + ";", sw)
     io.open(swp, "w", encoding="utf-8", newline="\n").write(sw)

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>中国通史 · 大事年表与人物图谱（远古 — 当代）</title>
-<link rel="stylesheet" href="css/bundle.css?v=2.57.0">
+<link rel="stylesheet" href="css/bundle.css?v=2.58.0">
   <meta name="description" content="中华上下五千年：大事年表、战役兵力对比、历代人物志与人物关系图谱。从炎黄传说到新时代。">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#f4ecd9">
@@ -73,6 +73,7 @@
         <div class="filters-inline" id="cat-filters"></div>
         <button id="era-toggle-all" class="mini-btn">展开全部</button>
       </div>
+      <div class="tl-nav" id="tl-nav" hidden></div>
       <div id="timeline"></div>
     </section>
 
@@ -84,6 +85,7 @@
       </div>
       <div class="graph-toolbar">
         <button id="legend-toggle" class="mini-btn" type="button">阵营筛选 ▾</button>
+        <select id="graph-era" class="mini-btn graph-era" title="按时期过滤图谱人物"></select>
         <div class="legend" id="graph-legend"></div>
         <div class="graph-switches">
           <label class="switch"><input type="checkbox" id="toggle-labels"><span>显示全部人名</span></label>
@@ -99,6 +101,7 @@
         <h2>人物志</h2>
         <p>按阵营浏览，点击卡片查看人物生平与关系</p>
       </div>
+      <div class="filters" id="era-filters"></div>
       <div class="filters" id="faction-filters"></div>
       <div id="people-grid" class="people-grid"></div>
       <div class="pagination" id="people-pagination"></div>
@@ -153,6 +156,6 @@
     </div>
   </div>
 
-<script defer src="js/bundle.js?v=2.57.0"></script>
+<script defer src="js/bundle.js?v=2.58.0"></script>
 </body>
 </html>

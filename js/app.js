@@ -120,6 +120,28 @@ function periodOf(ev) {
   return 16;
 }
 
+/* 人物 → 时期索引：优先取其参与事件所属时期（众数），其次解析生卒年或朝代词。
+   用于人物志时期筛选与图谱时期过滤；0 表示无法判定（仅出现在「全部」）。 */
+const PERIOD_YEARS = [[1,-9999,-2071],[2,-2070,-772],[3,-770,-222],[4,-221,219],[5,220,580],[6,581,959],[7,960,1270],[8,1271,1367],[9,1368,1643],[10,1644,1839],[11,1840,1911],[12,1912,1926],[13,1927,1936],[14,1937,1945],[15,1946,1949],[16,1950,9999]];
+const ERA_WORDS = [["秦汉",4],["南北朝",5],["北魏",5],["五代",6],["晚清",11],["近代",11],["春秋战国",3],["春秋",3],["战国",3],["东周",3],["西周",2],["民国",12],["三国",5],["两晋",5],["隋代",6],["隋唐",6],["唐代",6],["宋代",7],["元朝",8],["元",8],["夏",2],["商",2],["秦",4],["汉",4],["晋",5],["隋",6],["唐",6],["宋",7],["辽",7],["金",7],["明",9],["清",10]];
+var _eraCache = {};
+function eraOfPerson(p) {
+  if (_eraCache[p.id] !== undefined) return _eraCache[p.id];
+  var pk = 0, cnt = {};
+  (p.events || []).forEach(eid => { var ev = EVENT_MAP[eid]; if (ev) { var k = periodOf(ev); cnt[k] = (cnt[k] || 0) + 1; } });
+  var best = 0, bestN = 0;
+  Object.keys(cnt).forEach(k => { if (cnt[k] > bestN) { bestN = cnt[k]; best = +k; } });
+  if (bestN) pk = best;
+  if (!pk) {
+    var life = p.life || "";
+    var ym = life.match(/(前)?(\d{3,4})/);
+    if (ym) { var y = (ym[1] ? -1 : 1) * (+ym[2]); pk = (PERIOD_YEARS.find(r => y >= r[1] && y <= r[2]) || [0])[0]; }
+    if (!pk) for (var i = 0; i < ERA_WORDS.length; i++) { if (life.indexOf(ERA_WORDS[i][0]) >= 0) { pk = ERA_WORDS[i][1]; break; } }
+  }
+  _eraCache[p.id] = pk;
+  return pk;
+}
+
 /* ---------- 主题切换 ---------- */
 function currentTheme() {
   try { return localStorage.getItem(THEME_KEY) || "light"; } catch (e) { return "light"; }
@@ -188,6 +210,7 @@ function renderCatFilters() {
 }
 
 function renderTimeline() {
+  setTimeout(observeTlEras, 0); // 渲染后重挂时期导航观察（含搜索空态路径）
   const wrap = document.getElementById("timeline");
   const term = getTerm();
   const byPeriod = {};
@@ -346,6 +369,17 @@ function syncToggleAllBtn() {
 
 /* ---------- 人物志 ---------- */
 let factionFilter = "all";
+var eraFilter = "all";
+function renderEraFilters() {
+  const box = document.getElementById("era-filters");
+  if (!box) return;
+  const defs = [["all", { name: "全部时期" }]].concat(Object.keys(PERIODS).map(k => [k, PERIODS[k]]));
+  box.innerHTML = defs.map(([key, per]) =>
+    `<button class="filter-btn ${String(key) === String(eraFilter) ? "active" : ""}" data-er="${key}">${per.name}</button>`).join("");
+  box.querySelectorAll("[data-er]").forEach(btn => {
+    btn.onclick = () => { eraFilter = btn.dataset.er; peoplePage = 1; renderEraFilters(); renderPeopleGrid(); };
+  });
+}
 let peoplePage = 1;
 
 function renderFactionFilters() {
@@ -377,6 +411,7 @@ function renderPeopleGrid() {
   const term = getTerm();
   const list = PEOPLE_LIST.filter(p =>
     (factionFilter === "all" || p.faction === factionFilter) &&
+    (eraFilter === "all" || String(eraOfPerson(p)) === String(eraFilter)) &&
     (!term || personMatch(p, term)));
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if (peoplePage > pages) peoplePage = pages;
@@ -490,6 +525,46 @@ document.getElementById("search").addEventListener("keydown", e => {
     e.preventDefault();
   }
 });
+/* ---------- 搜索联想：前 4 人物 + 前 4 事件，点击直达 ---------- */
+var sugTimer = null, sugBox = null;
+function hideSearchSug() { if (sugBox) sugBox.hidden = true; }
+function buildSearchSug(term) {
+  if (!sugBox) {
+    const wrap = document.querySelector(".search-wrap");
+    if (!wrap) return;
+    sugBox = document.createElement("div");
+    sugBox.id = "search-sug";
+    sugBox.className = "search-sug";
+    wrap.appendChild(sugBox);
+    sugBox.addEventListener("mousedown", e => {
+      const it = e.target.closest("[data-sug]");
+      if (!it) return;
+      e.preventDefault();
+      const kind = it.dataset.sug, id = it.dataset.id;
+      hideSearchSug();
+      if (kind === "p") openPerson(id); else openEvent(id);
+    });
+    document.addEventListener("click", e => { if (!e.target.closest(".search-wrap")) hideSearchSug(); });
+  }
+  if (!term || term.length < 1) { sugBox.hidden = true; return; }
+  // 名字/标题直接命中的排前面（简介里顺带提到的排后面）
+  const rank = (name) => name.indexOf(term) === 0 ? 0 : (name.indexOf(term) > 0 ? 1 : 2);
+  const ps = PEOPLE_LIST.filter(p => personMatch(p, term))
+    .sort((a, b) => rank(a.name) - rank(b.name)).slice(0, 4);
+  const es = EVENTS.filter(ev => evMatch(ev, term))
+    .sort((a, b) => rank(a.title) - rank(b.title)).slice(0, 4);
+  if (!ps.length && !es.length) { sugBox.hidden = true; return; }
+  sugBox.innerHTML =
+    (ps.length ? '<div class="sug-head">人物</div>' + ps.map(p =>
+      `<button class="sug-item" data-sug="p" data-id="${p.id}"><span class="sug-ico">👤</span><b>${esc(p.name)}</b><i>${esc(p.life)} · ${esc(p.title)}</i></button>`).join("") : "") +
+    (es.length ? '<div class="sug-head">事件</div>' + es.map(ev =>
+      `<button class="sug-item" data-sug="e" data-id="${ev.id}"><span class="sug-ico">📜</span><b>${esc(ev.title)}</b><i>${ev.year < 0 ? "前" + (-ev.year) : ev.year} 年 · ${esc(ev.date || "")}</i></button>`).join("") : "");
+  sugBox.hidden = false;
+}
+document.getElementById("search").addEventListener("input", () => {
+  clearTimeout(sugTimer);
+  sugTimer = setTimeout(() => buildSearchSug(getTerm()), 140);
+});
 (function bindSearchClear() {
   const btn = document.getElementById("search-clear");
   if (!btn) return;
@@ -528,6 +603,20 @@ document.addEventListener("keydown", e => {
   if (!modalMask.hidden) closeModal();
 });
 
+/* 快捷键：/ 聚焦搜索；疆域图页 ←→ 切换时期 */
+document.addEventListener("keydown", e => {
+  const ae = document.activeElement;
+  const typing = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.tagName === "SELECT" || ae.isContentEditable);
+  if (e.key === "/" && !typing) { e.preventDefault(); document.getElementById("search").focus(); document.getElementById("search").select(); return; }
+  if (typing || e.ctrlKey || e.altKey || e.metaKey) return;
+  const modalOpen = !document.getElementById("modal-mask").hidden || (portraitLb && !portraitLb.hidden);
+  if (modalOpen || currentTab !== "map-section") return;
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    setMapPk(((mapCurrentPk - 1 + 16) + (e.key === "ArrowRight" ? 1 : -1)) % 16 + 1);
+  }
+});
+
 /* ---------- 头像大图（灯箱） ---------- */
 var portraitLb = null;
 function ensurePortraitLb() {
@@ -538,6 +627,7 @@ function ensurePortraitLb() {
   portraitLb.innerHTML = `<button class="plb-close" aria-label="关闭大图">✕</button>
     <figure class="plb-fig">
       <img alt="">
+      <div class="plb-err" hidden>画像加载失败，请稍后再试</div>
       <figcaption></figcaption>
     </figure>`;
   document.body.appendChild(portraitLb);
@@ -547,11 +637,20 @@ function ensurePortraitLb() {
 }
 function openPortraitLb(pid) {
   var p = PEOPLE[pid];
-  var src = typeof PORTRAITS !== "undefined" && PORTRAITS[pid];
+  var src = (typeof PORTRAITS_HI !== "undefined" && PORTRAITS_HI[pid]) || (typeof PORTRAITS !== "undefined" && PORTRAITS[pid]);
   if (!p || !src) return;
   var lb = ensurePortraitLb();
   var f = FACTIONS[p.faction];
   var img = lb.querySelector("img");
+  var err = lb.querySelector(".plb-err");
+  err.hidden = true;
+  img.classList.add("plb-loading");
+  img.style.display = "";
+  img.onload = function () { img.classList.remove("plb-loading"); };
+  img.onerror = function () { // 高清版失败回退 220 版，再失败提示
+    if (typeof PORTRAITS !== "undefined" && PORTRAITS[pid] && img.src !== location.origin + "/" + PORTRAITS[pid]) { img.src = PORTRAITS[pid]; return; }
+    img.classList.remove("plb-loading"); img.style.display = "none"; err.hidden = false;
+  };
   img.src = src;
   img.alt = p.name + "画像";
   lb.querySelector("figcaption").innerHTML =
@@ -649,7 +748,7 @@ function openEvent(id) {
   const plain = typeof EVENT_PLAIN !== "undefined" && EVENT_PLAIN[ev.id];
   modalBody.innerHTML = `
     <span class="m-cat" style="color:${cat.color}">${cat.name}</span><span class="m-date">${esc(ev.date)} · ${period.name}</span>
-    <h3 class="m-title">${esc(ev.title)}</h3>
+    <h3 class="m-title">${esc(ev.title)}<button class="share-btn" data-share="e:${ev.id}" title="复制本页链接">🔗 分享</button></h3>
     ${plain ? `<div class="plain-box"><b>🔎 一句话看懂</b><div>${esc(plain)}</div></div>` : ""}
     <h4 class="m-h4">背景与经过</h4>
     <p class="m-desc">${glossarize(esc(ev.desc))}</p>
@@ -767,6 +866,7 @@ function openPerson(id) {
           <span class="badge" style="color:var(--gold);border-color:var(--gold)">${esc(p.title)}</span>
         </div>
       </div>
+      <button class="share-btn" data-share="p:${id}" title="复制本页链接">🔗 分享</button>
     </div>
     ${vitaHtml}
     <div class="beginner-note">先认识一下：${esc(p.name)}（${esc(p.life)}），${esc(f.name)}人物 —— ${esc(p.title)}。生词带<span class="term-demo">虚线下划线</span>的都可以点开解释。</div>
@@ -1015,7 +1115,7 @@ function renderGraphLegend() {
 function buildGraphOption(showAllLabels) {
   const showEdgeLabels = document.getElementById("toggle-edge-labels").checked;
   const z = labelZoom;
-  const nodes = PEOPLE_LIST.filter(p => !factionOff[p.faction]).map(p => {
+  const nodes = PEOPLE_LIST.filter(p => !factionOff[p.faction] && (graphEra === "all" || String(eraOfPerson(p)) === graphEra)).map(p => {
     const f = FACTIONS[p.faction];
     const deg = DEGREE[p.id] || 0;
     return {
@@ -1219,6 +1319,15 @@ function applyGraphFilter() {
 }
 
 document.getElementById("toggle-labels").onchange = () => applyGraphFilter();
+/* 图谱时期过滤 */
+var graphEra = "all";
+(function bindGraphEra() {
+  const sel = document.getElementById("graph-era");
+  if (!sel) return;
+  sel.innerHTML = '<option value="all">全部时期</option>' +
+    Object.keys(PERIODS).map(pk => `<option value="${pk}">${PERIODS[pk].name}</option>`).join("");
+  sel.onchange = () => { graphEra = sel.value; applyGraphFilter(); };
+})();
 
 /* ---------- 返回顶部 ---------- */
 const backTopBtn = document.getElementById("back-top");
@@ -1230,7 +1339,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.57.0", build: 1790903675 };
+const CURRENT_VERSION = { version: "2.58.0", build: 1790904472 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1280,6 +1389,16 @@ async function checkUpdate(manual) {
 document.addEventListener("click", e => {
   const term = e.target.closest(".term");
   if (term) { showTermPop(term); return; }
+  // 分享：复制带 #p/#e 深链的 URL
+  const shareBtn = e.target.closest("[data-share]");
+  if (shareBtn) {
+    const parts = shareBtn.dataset.share.split(":");
+    const url = location.origin + location.pathname + "#" + parts[0] + "/" + parts[1];
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => toastMsg("链接已复制，可粘贴分享给好友"), () => toastMsg(url));
+    } else toastMsg(url);
+    return;
+  }
   // 头像 → 大图（优先于所在人物卡片的打开人物）
   const bigAv = e.target.closest(".avatar[data-big]");
   if (bigAv) { openPortraitLb(bigAv.dataset.big); return; }
@@ -1472,8 +1591,38 @@ function refreshPinyin() {
 
 applyTheme(currentTheme(), false);
 renderCatFilters();
+
+/* ---------- 时间线吸顶时期导航 ---------- */
+(function initTlNav() {
+  const nav = document.getElementById("tl-nav");
+  if (!nav) return;
+  nav.innerHTML = Object.keys(PERIODS).map(pk =>
+    `<button data-pk="${pk}"><i></i>${PERIODS[pk].name}</button>`).join("");
+  nav.addEventListener("click", e => {
+    const b = e.target.closest("button[data-pk]");
+    if (!b) return;
+    const sec = document.querySelector('.era[data-era="' + b.dataset.pk + '"]');
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  const io = new IntersectionObserver(es => {
+    es.forEach(en => {
+      if (!en.isIntersecting) return;
+      nav.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.pk === en.target.dataset.era));
+    });
+  }, { rootMargin: "-25% 0px -65% 0px" });
+  window._tlNavIO = io;
+})();
+function observeTlEras() {
+  if (!window._tlNavIO) return;
+  document.querySelectorAll("#timeline .era").forEach(el => window._tlNavIO.observe(el));
+  const nav = document.getElementById("tl-nav");
+  if (nav) nav.hidden = !document.querySelectorAll("#timeline .era").length;
+}
+
 renderTimeline();
 renderFactionFilters();
+renderEraFilters();
+observeTlEras();
 renderPeopleGrid();
 renderGraphLegend();
 document.getElementById("update-btn").onclick = () => checkUpdate(true);
@@ -2052,3 +2201,21 @@ window.addEventListener("pagehide", savePageState);
   }
 })();
 
+
+/* ---------- 深度内容层异步加载（bundle-data.js：年谱/名言/评价/详细履历） ---------- */
+(function loadDataChunk() {
+  var s = document.createElement("script");
+  s.src = "js/bundle-data.js?v=" + CURRENT_VERSION.version;
+  s.onload = function () {
+    try {
+      _personHtmlCache.clear(); // 人物弹窗 HTML 缓存按旧数据生成，作废重建
+      var shareBtn = document.querySelector("#modal-body [data-share]");
+      if (shareBtn && !document.getElementById("modal-mask").hidden) {
+        var parts = shareBtn.dataset.share.split(":");
+        if (parts[0] === "p") { var st = modalBody.scrollTop; openPerson(parts[1]); modalBody.scrollTop = st; }
+      }
+      refreshPinyin();
+    } catch (e) {}
+  };
+  document.head.appendChild(s);
+})();
