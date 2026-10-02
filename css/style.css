@@ -278,8 +278,39 @@ body {
 .legend button.off { opacity: .38; text-decoration: line-through; }
 .legend button:hover { border-color: rgba(255,255,255,.3); }
 
-.switch { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; cursor: pointer; user-select: none; }
-.switch input { accent-color: var(--gold); width: 15px; height: 15px; }
+/* 开关按钮：label 即胶囊按钮，复选框仅承载状态（JS 读 checked / onchange 不变） */
+.switch {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: .08em;
+  line-height: 1;
+  cursor: pointer; user-select: none;
+  transition: all .15s;
+}
+.switch:hover { color: var(--gold); border-color: var(--gold); }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.switch span::before {
+  content: ""; flex: 0 0 auto;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: color-mix(in srgb, var(--muted) 55%, transparent);
+  transition: all .15s;
+}
+.switch:has(input:checked) {
+  color: var(--ink-strong, #f2ead4);
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+}
+.switch:has(input:checked) span::before {
+  background: var(--gold);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--gold) 80%, transparent);
+}
+.switch:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 #graph {
   height: 660px;
