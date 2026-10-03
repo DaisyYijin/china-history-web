@@ -1385,7 +1385,7 @@ window.addEventListener("scroll", () => {
 backTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------- 版本更新检查（对比 GitHub 上的 version.json） ---------- */
-const CURRENT_VERSION = { version: "2.60.0", build: 1790950215 };
+const CURRENT_VERSION = { version: "2.60.1", build: 1790988683 };
 
 function toastMsg(text, ms) {
   let t = document.getElementById("global-toast");
@@ -1518,14 +1518,14 @@ function _segHtml(seg) {
   var res = { html: null };
   if (pinyinEnabled() && typeof PY_COMMON !== "undefined") {
     var hasRare = false, k;
-    for (k = 0; k < seg.length; k++) if (!PY_COMMON.has(seg[k])) { hasRare = true; break; }
+    for (k = 0; k < seg.length; k++) if (!PY_COMMON.has(seg[k]) || PY_FORCE.has(seg[k])) { hasRare = true; break; }
     if (hasRare) {
       try {
         var arr = pinyinPro.pinyin(seg, { type: "array", toneType: "symbol" });
         var html = "";
         for (var i = 0; i < seg.length; i++) {
           var ch = seg[i];
-          if (!PY_COMMON.has(ch) && arr[i] && !/^u\d/.test(arr[i])) {
+          if ((!PY_COMMON.has(ch) || PY_FORCE.has(ch)) && arr[i] && !/^u\d/.test(arr[i])) {
             html += '<span class="pyz" data-ch="' + ch + '">' + ch + '<em>(' + arr[i] + ')</em></span>';
           } else html += ch;
         }
